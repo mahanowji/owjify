@@ -1,0 +1,67 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.page {
+  @include container;
+  padding-block: 2.5rem 5rem;
+  max-width: 900px;
+}
+
+.header {
+  @include flex-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1.4rem;
+}
+
+.tabBtn {
+  padding: 0.48rem 1rem;
+  border-radius: $radius-pill;
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: $white;
+  border: 1px solid rgba(17, 18, 15, 0.1);
+
+  &.active {
+    background: $charcoal-900;
+    color: $lime-400;
+    border-color: $charcoal-900;
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.item {
+  @include card-light;
+  padding: 1.15rem 1.35rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+
+  &.unread {
+    border-inline-start: 4px solid $lime-400;
+    background: #fdfcf9;
+  }
+}
+
+.iconCircle {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  @include flex-center;
+  background: $offwhite-200;
+  color: $charcoal-900;
+  flex-shrink: 0;
+}

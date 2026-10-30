@@ -1,0 +1,50 @@
+export const SEED_SKILL_REQUESTS = [
+  {
+    id: 'skreq-101',
+    requesterUserId: 'user-pro-demo',
+    requesterProId: 'pro-1',
+    requesterName: { fa: 'آرین رادمهر', en: 'Arian Radmehr' },
+    requestType: 'specialist_collaboration', // 'specialist_collaboration' | 'platform_skill'
+    categoryId: 'technology',
+    skillName: {
+      fa: 'طراحی داشبورد IoT پایش دما',
+      en: 'IoT Telemetry Web Dashboard',
+    },
+    targetProId: 'pro-3',
+    targetProName: { fa: 'کیوان بهرامی', en: 'Keyvan Bahrami' },
+    conversationId: 'conv-pro1-to-pro3-skill',
+    urgency: 'urgent',
+    budget: 28000000,
+    budgetUsd: 560,
+    status: 'in_discussion',
+    details: {
+      fa: 'نیازمند همکاری با متخصص نرم‌افزار جهت پیاده‌سازی پنل وب مانیتورینگ لحظه‌ای دما و فشار چیلرهای مرکزی برج اداری.',
+      en: 'Seeking a software specialist to build a live web telemetry dashboard for commercial chiller temperature and pressure sensors.',
+    },
+    createdAt: '2026-10-30T09:50:00Z',
+  },
+  {
+    id: 'skreq-102',
+    requesterUserId: 'user-pro-demo',
+    requesterProId: 'pro-1',
+    requesterName: { fa: 'آرین رادمهر', en: 'Arian Radmehr' },
+    requestType: 'platform_skill',
+    categoryId: 'repairs',
+    skillName: {
+      fa: 'بهینه‌سازی مصرف انرژی موتورخانه هوشمند (BMS)',
+      en: 'Smart BMS Plant Energy Optimization',
+    },
+    targetProId: null,
+    targetProName: null,
+    conversationId: null,
+    urgency: 'normal',
+    budget: 0,
+    budgetUsd: 0,
+    status: 'approved',
+    details: {
+      fa: 'درخواست ثبت مهارت تخصصی بهینه‌سازی BMS در فهرست مهارت‌های رسمی بازارگاه اوجیفای و افزودن به پروفایل.',
+      en: 'Request to register Smart BMS Plant Energy Optimization in the official OWJIFY skill taxonomy.',
+    },
+    createdAt: '2026-10-27T14:20:00Z',
+  },
+];

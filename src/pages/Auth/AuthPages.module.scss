@@ -1,0 +1,145 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.card {
+  background: $white;
+  padding: clamp(1.6rem, 3.5vw, 2.35rem);
+  border-radius: $radius-lg;
+  border: 1px solid rgba(17, 18, 15, 0.09);
+  box-shadow: $shadow-md;
+}
+
+.title {
+  font-size: 1.55rem;
+  font-weight: 900;
+  color: $charcoal-900;
+}
+
+.subtitle {
+  font-size: 0.88rem;
+  color: $gray-600;
+  margin-top: 0.35rem;
+  margin-bottom: 1.4rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+
+  label {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: $charcoal-900;
+  }
+
+  input[type='text'],
+  input[type='email'],
+  input[type='password'] {
+    width: 100%;
+    padding: 0.78rem 0.95rem;
+    border-radius: 12px;
+    border: 1px solid rgba(17, 18, 15, 0.16);
+    background: $offwhite-100;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s ease, background 0.2s ease;
+
+    &:focus {
+      border-color: $charcoal-900;
+      background: $white;
+    }
+  }
+}
+
+.passWrap {
+  position: relative;
+
+  input {
+    padding-inline-end: 2.7rem !important;
+  }
+}
+
+.eyeBtn {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 0.75rem;
+  transform: translateY(-50%);
+  color: $gray-600;
+  display: flex;
+}
+
+.roleSelector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.roleOption {
+  padding: 0.8rem;
+  border-radius: 12px;
+  border: 1.5px solid rgba(17, 18, 15, 0.12);
+  background: $offwhite-100;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+  transition: all 0.2s ease;
+
+  &.roleActive {
+    background: $charcoal-900;
+    color: $lime-400;
+    border-color: $charcoal-900;
+  }
+}
+
+.rowBetween {
+  @include flex-between;
+  font-size: 0.82rem;
+  gap: 0.5rem;
+}
+
+.errorAlert {
+  padding: 0.75rem 0.95rem;
+  border-radius: 12px;
+  background: rgba(217, 72, 72, 0.1);
+  border: 1px solid rgba(217, 72, 72, 0.25);
+  color: $danger;
+  font-size: 0.83rem;
+  font-weight: 600;
+}
+
+.devBox {
+  margin-top: 1.1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: rgba(199, 243, 107, 0.22);
+  border: 1px dashed rgba(17, 18, 15, 0.25);
+  font-size: 0.8rem;
+  line-height: 1.65;
+}
+
+.demoBar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  margin-bottom: 1.15rem;
+}
+
+.footerNote {
+  margin-top: 1.25rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: $gray-600;
+
+  a {
+    color: $charcoal-900;
+    font-weight: 800;
+    text-decoration: underline;
+  }
+}

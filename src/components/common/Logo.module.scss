@@ -1,0 +1,60 @@
+@use '../../styles/variables' as *;
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.72rem;
+  user-select: none;
+  direction: ltr;
+
+  &:hover .mark {
+    transform: rotate(-4deg) scale(1.04);
+  }
+}
+
+.mark {
+  display: inline-flex;
+  transition: transform 0.35s $ease-editorial;
+  flex-shrink: 0;
+}
+
+.textGroup {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.wordmark {
+  font-family: var(--font-en);
+  font-weight: 800;
+  font-size: 1.24rem;
+  letter-spacing: -0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: $lime-400;
+  display: inline-block;
+  margin-inline-start: 2px;
+}
+
+.sub {
+  font-size: 0.68rem;
+  font-weight: 500;
+  opacity: 0.65;
+  margin-top: 3px;
+  font-family: var(--font-fa);
+}
+
+.light {
+  color: $offwhite-100;
+}
+
+.dark {
+  color: $charcoal-900;
+}

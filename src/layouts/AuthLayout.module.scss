@@ -1,0 +1,116 @@
+@use '../styles/variables' as *;
+@use '../styles/mixins' as *;
+
+.authShell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  background: $offwhite-100;
+
+  @include tablet {
+    grid-template-columns: 1fr;
+  }
+}
+
+.visualSide {
+  background: radial-gradient(circle at 20% 15%, rgba(199, 243, 107, 0.16), transparent 52%),
+    $charcoal-900;
+  color: $offwhite-100;
+  padding: clamp(2rem, 4vw, 3.75rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+
+  @include tablet {
+    display: none;
+  }
+}
+
+.topBar {
+  @include flex-between;
+  z-index: 2;
+}
+
+.langToggle {
+  padding: 0.42rem 0.9rem;
+  border-radius: $radius-pill;
+  border: 1px solid rgba(246, 245, 240, 0.2);
+  color: $offwhite-100;
+  font-size: 0.8rem;
+  font-weight: 700;
+
+  &:hover {
+    border-color: $lime-400;
+    color: $lime-400;
+  }
+}
+
+.quoteWrap {
+  max-width: 490px;
+  z-index: 2;
+  margin-block: 3rem;
+}
+
+.kicker {
+  color: $lime-400;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  display: inline-block;
+}
+
+.headline {
+  font-size: clamp(2rem, 3.2vw, 3rem);
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 1.15rem;
+}
+
+.desc {
+  color: rgba(246, 245, 240, 0.68);
+  font-size: 0.98rem;
+  line-height: 1.8;
+}
+
+.metricsRow {
+  display: flex;
+  gap: 2.2rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(246, 245, 240, 0.1);
+  z-index: 2;
+}
+
+.metricVal {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: $lime-400;
+}
+
+.metricLbl {
+  font-size: 0.8rem;
+  color: rgba(246, 245, 240, 0.62);
+}
+
+.formSide {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+}
+
+.mobileHeader {
+  display: none;
+  margin-bottom: 1.75rem;
+
+  @include tablet {
+    @include flex-between;
+  }
+}
+
+.formCard {
+  width: 100%;
+  max-width: 470px;
+  margin-inline: auto;
+}

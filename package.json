@@ -1,0 +1,30 @@
+{
+  "name": "owjify",
+  "private": true,
+  "version": "1.0.0",
+  "description": "OWJIFY — Premium Professional Services Marketplace (React + Vite + JSX + Framer Motion + SCSS)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^9.5.0",
+    "framer-motion": "^11.11.17",
+    "lucide-react": "^0.460.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0",
+    "stylis": "^4.4.0",
+    "stylis-plugin-rtl": "^2.1.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.3",
+    "sass-embedded": "^1.80.6",
+    "vite": "^5.4.11"
+  }
+}

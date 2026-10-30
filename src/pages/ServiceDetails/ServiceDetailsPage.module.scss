@@ -1,0 +1,231 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.page {
+  @include container;
+  padding-block: 2.2rem 5rem;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+  color: $gray-600;
+  margin-bottom: 1.5rem;
+}
+
+.topActions {
+  @include flex-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-size: clamp(1.55rem, 2.8vw, 2.35rem);
+  font-weight: 900;
+  line-height: 1.3;
+  max-width: 860px;
+}
+
+.actionCluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  height: fit-content;
+  flex-shrink: 0;
+  align-self: flex-end;
+
+  @include mobile {
+    align-self: flex-start;
+  }
+}
+
+.iconOnlyBtn {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  max-height: 38px;
+  padding: 0;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: $white;
+  border: 1px solid rgba(17, 18, 15, 0.13);
+  color: $charcoal-900;
+  box-shadow: 0 3px 10px rgba(17, 18, 15, 0.04);
+  flex-shrink: 0;
+  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease,
+    border-color 0.18s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    background: $charcoal-900;
+    border-color: $charcoal-900;
+    color: $lime-400;
+  }
+
+  &.iconOnlyActive {
+    background: $charcoal-900;
+    border-color: $charcoal-900;
+    color: $lime-400;
+  }
+
+  &.iconOnlyReport {
+    color: $gray-700;
+
+    &:hover {
+      background: rgba(217, 72, 72, 0.1);
+      border-color: rgba(217, 72, 72, 0.38);
+      color: $danger;
+    }
+  }
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1.65fr 1fr;
+  gap: 2.2rem;
+  align-items: start;
+
+  @include tablet {
+    grid-template-columns: 1fr;
+  }
+}
+
+.galleryMain {
+  height: clamp(270px, 42vw, 460px);
+  border-radius: $radius-lg;
+  overflow: hidden;
+  cursor: zoom-in;
+  border: 1px solid rgba(17, 18, 15, 0.09);
+}
+
+.thumbStrip {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 0.85rem;
+  overflow-x: auto;
+}
+
+.thumbBtn {
+  width: 92px;
+  height: 66px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  opacity: 0.65;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+
+  &.thumbActive {
+    border-color: $charcoal-900;
+    opacity: 1;
+  }
+}
+
+.contentCard {
+  @include card-light;
+  padding: 1.75rem;
+  margin-top: 1.5rem;
+}
+
+.secTitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-bottom: 0.95rem;
+}
+
+.deliverableList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.deliverableItem {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.skillTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.skillPill {
+  padding: 0.42rem 0.9rem;
+  border-radius: $radius-pill;
+  background: $offwhite-100;
+  border: 1px solid rgba(17, 18, 15, 0.1);
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: $charcoal-900;
+    color: $lime-400;
+  }
+}
+
+.stickySidebar {
+  position: sticky;
+  top: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  @include tablet {
+    position: static;
+  }
+}
+
+.pricingCard {
+  background: $charcoal-900;
+  color: $offwhite-100;
+  border-radius: $radius-lg;
+  padding: 1.85rem;
+  box-shadow: $shadow-lg;
+}
+
+.priceBig {
+  font-size: 1.95rem;
+  font-weight: 900;
+  color: $lime-400;
+  margin-top: 0.25rem;
+}
+
+.proSidebarCard {
+  @include card-light;
+  padding: 1.5rem;
+}
+
+.reviewItem {
+  padding: 1.15rem 0;
+  border-bottom: 1px solid rgba(17, 18, 15, 0.08);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.relatedGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+
+  @include tablet {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}

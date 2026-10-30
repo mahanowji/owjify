@@ -1,0 +1,241 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.card {
+  @include card-light;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow: $shadow-md;
+    border-color: rgba(17, 18, 15, 0.2);
+
+    .coverMedia img {
+      transform: scale(1.06);
+    }
+  }
+
+  &.listMode {
+    flex-direction: row;
+    align-items: stretch;
+
+    @include mobile {
+      flex-direction: column;
+    }
+
+    .coverWrap {
+      width: 310px;
+      flex-shrink: 0;
+      height: auto;
+      min-height: 230px;
+
+      @include mobile {
+        width: 100%;
+        height: 215px;
+      }
+    }
+  }
+}
+
+.coverWrap {
+  position: relative;
+  height: 215px;
+  overflow: hidden;
+}
+
+.coverMedia {
+  width: 100%;
+  height: 100%;
+}
+
+.topBadges {
+  position: absolute;
+  top: 0.85rem;
+  inset-inline-start: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  z-index: 2;
+}
+
+.catBadge {
+  padding: 0.3rem 0.72rem;
+  border-radius: $radius-pill;
+  background: rgba(17, 18, 15, 0.82);
+  backdrop-filter: blur(8px);
+  color: $offwhite-100;
+  font-size: 0.73rem;
+  font-weight: 600;
+}
+
+.urgentBadge {
+  padding: 0.3rem 0.68rem;
+  border-radius: $radius-pill;
+  background: $lime-400;
+  color: $charcoal-900;
+  font-size: 0.71rem;
+  font-weight: 800;
+}
+
+.favBtn {
+  position: absolute;
+  top: 0.75rem;
+  inset-inline-end: 0.75rem;
+  width: 31px;
+  height: 31px;
+  border-radius: 50%;
+  @include flex-center;
+  background: rgba(255, 255, 255, 0.94);
+  color: $charcoal-900;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
+  z-index: 2;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    transform: scale(1.08);
+  }
+
+  &.favActive {
+    background: $charcoal-900;
+    color: $lime-400;
+  }
+}
+
+.body {
+  padding: 1.2rem 1.3rem 1.3rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 0.7rem;
+}
+
+.proRow {
+  @include flex-between;
+  gap: 0.6rem;
+}
+
+.proLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+
+  &:hover .proName {
+    text-decoration: underline;
+  }
+}
+
+.proAvatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1.5px solid $lime-400;
+}
+
+.proName {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: $charcoal-900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ratingBox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: $charcoal-900;
+  background: $offwhite-100;
+  padding: 0.24rem 0.58rem;
+  border-radius: $radius-pill;
+  flex-shrink: 0;
+}
+
+.revCount {
+  color: $gray-500;
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+.titleLink {
+  font-size: 1.04rem;
+  font-weight: 800;
+  line-height: 1.48;
+  color: $charcoal-900;
+  @include line-clamp(2);
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #354710;
+  }
+}
+
+.shortDesc {
+  font-size: 0.85rem;
+  color: $gray-600;
+  line-height: 1.65;
+  @include line-clamp(2);
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  font-size: 0.78rem;
+  color: $gray-600;
+  margin-top: auto;
+  padding-top: 0.4rem;
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.footer {
+  @include flex-between;
+  gap: 0.75rem;
+  padding-top: 0.9rem;
+  margin-top: 0.35rem;
+  border-top: 1px solid rgba(17, 18, 15, 0.07);
+}
+
+.priceLabel {
+  display: block;
+  font-size: 0.71rem;
+  color: $gray-500;
+}
+
+.priceVal {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: $charcoal-900;
+}
+
+.detailsBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.4rem 0.82rem;
+  line-height: 1.2;
+  border-radius: $radius-pill;
+  background: $charcoal-900;
+  color: $offwhite-100;
+  font-size: 0.76rem;
+  font-weight: 700;
+  transition: background 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background: $lime-400;
+    color: $charcoal-900;
+  }
+}

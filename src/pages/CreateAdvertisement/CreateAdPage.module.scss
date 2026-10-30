@@ -1,0 +1,175 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.page {
+  @include container;
+  padding-block: 2.5rem 5rem;
+  max-width: 980px;
+}
+
+.draftBanner {
+  @include flex-between;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  padding: 0.95rem 1.25rem;
+  border-radius: $radius-md;
+  background: rgba(199, 243, 107, 0.22);
+  border: 1px solid rgba(17, 18, 15, 0.14);
+  margin-bottom: 1.5rem;
+  font-size: 0.88rem;
+}
+
+.stepper {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 0.4rem;
+  margin-block: 1.5rem 2rem;
+
+  @include mobile {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.stepDot {
+  padding: 0.5rem 0.3rem;
+  border-radius: 10px;
+  background: $white;
+  border: 1px solid rgba(17, 18, 15, 0.1);
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: $gray-600;
+  transition: all 0.2s ease;
+
+  &.done {
+    background: $offwhite-200;
+    color: $charcoal-900;
+    border-color: $charcoal-900;
+  }
+
+  &.current {
+    background: $charcoal-900;
+    color: $lime-400;
+    border-color: $charcoal-900;
+  }
+}
+
+.wizardCard {
+  @include card-light;
+  padding: clamp(1.5rem, 3.5vw, 2.5rem);
+}
+
+.catSelectGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.85rem;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.catOption {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.15rem;
+  border-radius: 14px;
+  border: 1.5px solid rgba(17, 18, 15, 0.1);
+  background: $offwhite-100;
+  text-align: start;
+  transition: all 0.2s ease;
+
+  &.selected {
+    background: $charcoal-900;
+    color: $offwhite-100;
+    border-color: $charcoal-900;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 1.2rem;
+
+  label {
+    font-size: 0.88rem;
+    font-weight: 800;
+  }
+
+  input,
+  textarea,
+  select {
+    padding: 0.82rem 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(17, 18, 15, 0.16);
+    background: $white;
+    font-size: 0.92rem;
+    outline: none;
+
+    &:focus {
+      border-color: $charcoal-900;
+    }
+  }
+}
+
+.errorBox {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: rgba(217, 72, 72, 0.1);
+  color: $danger;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.imgGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.85rem;
+  margin-top: 1rem;
+
+  @include mobile {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.imgThumb {
+  position: relative;
+  height: 135px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 2px solid rgba(17, 18, 15, 0.12);
+}
+
+.removeImgBtn {
+  position: absolute;
+  top: 6px;
+  inset-inline-end: 6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(17, 18, 15, 0.85);
+  color: $white;
+  @include flex-center;
+}
+
+.navBar {
+  @include flex-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding-top: 1.35rem;
+  border-top: 1px solid rgba(17, 18, 15, 0.08);
+}
+
+.successStage {
+  @include card-light;
+  padding: 3.5rem 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}

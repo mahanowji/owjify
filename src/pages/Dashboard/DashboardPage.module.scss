@@ -1,0 +1,213 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.page {
+  @include container;
+  padding-block: 2.2rem 5rem;
+}
+
+.banner {
+  background: $charcoal-900;
+  color: $offwhite-100;
+  border-radius: $radius-xl;
+  padding: clamp(1.5rem, 3vw, 2.3rem);
+  @include flex-between;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.userRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 2.5px solid $lime-400;
+  flex-shrink: 0;
+}
+
+.rolePill {
+  @include pill-badge;
+  background: rgba(199, 243, 107, 0.16);
+  color: $lime-400;
+  margin-top: 4px;
+}
+
+.shellGrid {
+  display: grid;
+  grid-template-columns: 255px 1fr;
+  gap: 1.75rem;
+  align-items: start;
+
+  @include tablet {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sideNav {
+  @include card-light;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  position: sticky;
+  top: 86px;
+
+  @include tablet {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+  }
+}
+
+.sideBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 0.95rem;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: $gray-700;
+  text-align: start;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+
+  &:hover {
+    background: $offwhite-100;
+    color: $charcoal-900;
+  }
+
+  &.active {
+    background: $charcoal-900;
+    color: $lime-400;
+  }
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.65rem;
+
+  @include tablet {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.panel {
+  @include card-light;
+  padding: 1.6rem;
+  margin-bottom: 1.5rem;
+}
+
+.panelHead {
+  @include flex-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.2rem;
+}
+
+.adRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 14px;
+  background: $offwhite-100;
+  margin-bottom: 0.75rem;
+}
+
+.adInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 240px;
+  flex: 1;
+}
+
+.adThumb {
+  width: 72px;
+  height: 54px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.adMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  font-size: 0.78rem;
+  color: $gray-600;
+  margin-top: 0.25rem;
+}
+
+.statusBadge,
+.statusPill {
+  padding: 0.25rem 0.65rem;
+  border-radius: $radius-pill;
+  font-size: 0.72rem;
+  font-weight: 800;
+
+  &.statusActive,
+  &.activeStatus {
+    background: rgba(40, 158, 103, 0.14);
+    color: $success;
+  }
+
+  &.statusPaused,
+  &.pausedStatus {
+    background: rgba(224, 146, 43, 0.18);
+    color: #b46c11;
+  }
+}
+
+.cardsGrid2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.15rem;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chartBars {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.75rem;
+  align-items: end;
+  height: 155px;
+  padding-top: 1rem;
+}
+
+.barCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.barFill {
+  width: 100%;
+  max-width: 38px;
+  border-radius: 10px 10px 4px 4px;
+  background: $charcoal-900;
+  transition: height 0.4s ease, background 0.2s ease;
+
+  &:hover {
+    background: $lime-400;
+  }
+}

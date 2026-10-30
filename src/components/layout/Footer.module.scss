@@ -1,0 +1,153 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.footer {
+  background: $charcoal-900;
+  color: $offwhite-100;
+  padding: 4.2rem 0 2.2rem;
+  position: relative;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.topGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  padding-bottom: 2.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  @media (min-width: $bp-md) {
+    grid-template-columns: 1.5fr 1fr 1fr;
+  }
+
+  @media (min-width: $bp-lg) {
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+  }
+}
+
+.brandCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.brandLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.brandTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: $white;
+}
+
+.brandSub {
+  font-size: 0.72rem;
+  color: $lime-400;
+  font-weight: 600;
+}
+
+.tagline {
+  color: rgba(246, 245, 240, 0.68);
+  font-size: 0.9rem;
+  max-width: 390px;
+  margin-bottom: 0.95rem;
+  line-height: 1.75;
+}
+
+.newsletterBox {
+  max-width: 410px;
+}
+
+.newsletterTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 0.55rem;
+  color: rgba(246, 245, 240, 0.9);
+}
+
+.newsletterForm {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: $radius-pill;
+  padding: 0.28rem;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 0.42rem 0.9rem;
+    color: $white;
+    font-size: 0.84rem;
+
+    &::placeholder {
+      color: rgba(246, 245, 240, 0.45);
+    }
+  }
+}
+
+.linksCol {
+  h4 {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: $lime-400;
+    margin-bottom: 1.1rem;
+  }
+
+  ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  a {
+    font-size: 0.88rem;
+    color: rgba(246, 245, 240, 0.72);
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: $white;
+    }
+  }
+}
+
+html[lang='fa'] .linksCol h4 {
+  letter-spacing: 0;
+}
+
+.bottomBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1.6rem;
+  font-size: 0.8rem;
+  color: rgba(246, 245, 240, 0.52);
+}
+
+.bottomPills {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pill {
+  padding: 0.26rem 0.7rem;
+  border-radius: $radius-pill;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(246, 245, 240, 0.82);
+}

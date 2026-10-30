@@ -1,0 +1,107 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.hero {
+  background: $charcoal-900;
+  color: $offwhite-100;
+  padding: clamp(3rem, 5vw, 4.5rem) 0;
+}
+
+.heroTitle {
+  font-size: clamp(2rem, 3.8vw, 3.2rem);
+  font-weight: 900;
+  margin-top: 0.75rem;
+  line-height: 1.25;
+}
+
+.heroLead {
+  color: rgba(246, 245, 240, 0.7);
+  max-width: 650px;
+  margin-top: 0.85rem;
+  line-height: 1.85;
+}
+
+.body {
+  @include container;
+  padding-block: 3rem 5rem;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+
+  @include tablet {
+    grid-template-columns: 1fr;
+  }
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.35rem;
+
+  @include tablet {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  @include card-light;
+  padding: 1.75rem;
+}
+
+.subPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.42rem 0.9rem;
+  border-radius: $radius-pill;
+  background: $offwhite-100;
+  border: 1px solid rgba(17, 18, 15, 0.1);
+  font-size: 0.83rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: $charcoal-900;
+    color: $lime-400;
+  }
+}
+
+.faqItem {
+  @include card-light;
+  padding: 1.15rem 1.4rem;
+  margin-bottom: 0.8rem;
+}
+
+.faqTrigger {
+  width: 100%;
+  @include flex-between;
+  gap: 1rem;
+  text-align: start;
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.legalDoc {
+  @include card-light;
+  padding: clamp(1.75rem, 4vw, 3rem);
+  max-width: 860px;
+  margin-inline: auto;
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin: 1.6rem 0 0.65rem;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  p {
+    color: $gray-700;
+    line-height: 1.9;
+    font-size: 0.94rem;
+  }
+}

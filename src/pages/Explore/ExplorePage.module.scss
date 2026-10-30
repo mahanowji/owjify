@@ -1,0 +1,221 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.heroHeader {
+  background: $charcoal-900;
+  color: $offwhite-100;
+  padding: 2.8rem 0 2.6rem;
+  border-bottom: 1px solid rgba(246, 245, 240, 0.08);
+}
+
+.searchRow {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.searchInputWrap {
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.8rem 1.15rem;
+  border-radius: $radius-pill;
+  background: $offwhite-100;
+  color: $charcoal-900;
+
+  input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.94rem;
+  }
+}
+
+.layout {
+  @include container;
+  padding-block: 2.4rem 4.5rem;
+  display: grid;
+  grid-template-columns: 295px 1fr;
+  gap: 2rem;
+  align-items: start;
+
+  @include tablet {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sidebar {
+  @include card-light;
+  padding: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  position: sticky;
+  top: 86px;
+
+  @include tablet {
+    position: static;
+    display: none;
+
+    &.mobileShow {
+      display: flex;
+    }
+  }
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid rgba(17, 18, 15, 0.07);
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+
+.filterTitle {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: $charcoal-900;
+}
+
+.select,
+.priceInput {
+  width: 100%;
+  padding: 0.62rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid rgba(17, 18, 15, 0.14);
+  background: $offwhite-100;
+  font-size: 0.86rem;
+  outline: none;
+
+  &:focus {
+    border-color: $charcoal-900;
+    background: $white;
+  }
+}
+
+.priceGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.84rem;
+  color: $gray-700;
+  cursor: pointer;
+
+  input {
+    accent-color: $charcoal-900;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.toolbar {
+  @include flex-between;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-bottom: 1.35rem;
+  padding: 0.9rem 1.15rem;
+  background: $white;
+  border-radius: $radius-md;
+  border: 1px solid rgba(17, 18, 15, 0.08);
+}
+
+.viewToggle {
+  display: inline-flex;
+  background: $offwhite-100;
+  padding: 3px;
+  border-radius: 10px;
+}
+
+.viewBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  @include flex-center;
+  color: $gray-600;
+
+  &.activeView {
+    background: $charcoal-900;
+    color: $lime-400;
+  }
+}
+
+.activeChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1.25rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.34rem 0.78rem;
+  border-radius: $radius-pill;
+  background: $charcoal-900;
+  color: $offwhite-100;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.gridView {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.listView {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.emptyBox {
+  @include card-light;
+  padding: 3.5rem 1.75rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.paginationRow {
+  margin-top: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.mobileFilterBtn {
+  display: none;
+
+  @include tablet {
+    display: inline-flex;
+  }
+}

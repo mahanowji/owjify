@@ -1,0 +1,133 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.chatPane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: $white;
+  border-radius: $radius-md;
+  border: 1px solid rgba(17, 18, 15, 0.08);
+  overflow: hidden;
+}
+
+.header {
+  @include flex-between;
+  gap: 0.8rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(17, 18, 15, 0.08);
+  background: $offwhite-100;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid $lime-400;
+  flex-shrink: 0;
+}
+
+.name {
+  font-weight: 800;
+  font-size: 0.96rem;
+}
+
+.serviceSub {
+  font-size: 0.77rem;
+  color: $gray-600;
+}
+
+.messagesArea {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: radial-gradient(circle at 80% 10%, rgba(199, 243, 107, 0.08), transparent 45%),
+    $white;
+}
+
+.bubbleRow {
+  display: flex;
+  flex-direction: column;
+  max-width: 76%;
+
+  &.mine {
+    align-self: flex-start;
+  }
+
+  &.theirs {
+    align-self: flex-end;
+  }
+}
+
+.bubble {
+  padding: 0.82rem 1.05rem;
+  border-radius: 18px;
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.mine .bubble {
+  background: $charcoal-900;
+  color: $offwhite-100;
+  border-end-start-radius: 4px;
+}
+
+.theirs .bubble {
+  background: $offwhite-200;
+  color: $charcoal-900;
+  border-end-end-radius: 4px;
+}
+
+.time {
+  font-size: 0.7rem;
+  color: $gray-500;
+  margin-top: 3px;
+  padding-inline: 4px;
+}
+
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.9rem 1.15rem;
+  border-top: 1px solid rgba(17, 18, 15, 0.08);
+  background: $offwhite-100;
+}
+
+.input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: $radius-pill;
+  border: 1px solid rgba(17, 18, 15, 0.14);
+  background: $white;
+  outline: none;
+  font-size: 0.9rem;
+
+  &:focus {
+    border-color: $charcoal-900;
+  }
+}
+
+.emptyState {
+  height: 100%;
+  min-height: 420px;
+  @include flex-center;
+  flex-direction: column;
+  gap: 0.7rem;
+  text-align: center;
+  padding: 2rem;
+  background: $white;
+  border-radius: $radius-md;
+  border: 1px solid rgba(17, 18, 15, 0.08);
+  color: $gray-600;
+}

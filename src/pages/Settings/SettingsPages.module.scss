@@ -1,0 +1,72 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.page {
+  @include container;
+  padding-block: 2.5rem 5rem;
+  max-width: 960px;
+}
+
+.panel {
+  @include card-light;
+  padding: clamp(1.4rem, 3vw, 2rem);
+  margin-bottom: 1.5rem;
+}
+
+.secTitle {
+  font-size: 1.12rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+
+  label {
+    font-size: 0.84rem;
+    font-weight: 700;
+  }
+
+  input,
+  textarea,
+  select {
+    padding: 0.78rem 0.95rem;
+    border-radius: 12px;
+    border: 1px solid rgba(17, 18, 15, 0.16);
+    background: $offwhite-100;
+    font-size: 0.9rem;
+    outline: none;
+
+    &:focus {
+      background: $white;
+      border-color: $charcoal-900;
+    }
+  }
+}
+
+.cardsGrid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+
+  @include tablet {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}

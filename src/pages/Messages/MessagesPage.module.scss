@@ -1,0 +1,159 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.page {
+  @include container;
+  padding-block: 2.2rem 4rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 345px 1fr;
+  gap: 1.35rem;
+  height: 70vh;
+  min-height: 520px;
+
+  @include tablet {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+}
+
+.listPane {
+  @include card-light;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  @include tablet {
+    &.hideOnMobileChat {
+      display: none;
+    }
+  }
+}
+
+.searchBar {
+  padding: 0.9rem;
+  border-bottom: 1px solid rgba(17, 18, 15, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.88rem;
+  }
+}
+
+.convList {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.convItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.95rem 1.05rem;
+  border-bottom: 1px solid rgba(17, 18, 15, 0.06);
+  text-align: start;
+  transition: background 0.18s ease;
+
+  &:hover {
+    background: $offwhite-100;
+  }
+
+  &.active {
+    background: $charcoal-900;
+    color: $offwhite-100;
+
+    .preview {
+      color: rgba(246, 245, 240, 0.68);
+    }
+
+    .time {
+      color: rgba(246, 245, 240, 0.55);
+    }
+  }
+}
+
+.avatarWrap {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.onlineDot {
+  position: absolute;
+  bottom: 2px;
+  inset-inline-end: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #289e67;
+  border: 2px solid $white;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.topRow {
+  @include flex-between;
+  gap: 0.4rem;
+}
+
+.name {
+  font-weight: 800;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.time {
+  font-size: 0.7rem;
+  color: $gray-500;
+  flex-shrink: 0;
+}
+
+.preview {
+  font-size: 0.78rem;
+  color: $gray-600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.unreadBadge {
+  min-width: 20px;
+  height: 20px;
+  padding-inline: 5px;
+  border-radius: $radius-pill;
+  background: $lime-400;
+  color: $charcoal-900;
+  font-size: 0.7rem;
+  font-weight: 800;
+  @include flex-center;
+}
+
+.threadWrap {
+  height: 100%;
+
+  @include tablet {
+    min-height: 520px;
+
+    &.hideOnMobileList {
+      display: none;
+    }
+  }
+}

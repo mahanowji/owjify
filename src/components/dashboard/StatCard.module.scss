@@ -1,0 +1,55 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.card {
+  @include card-light;
+  padding: 1.35rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  &.accent {
+    background: $charcoal-900;
+    color: $offwhite-100;
+
+    .label {
+      color: rgba(246, 245, 240, 0.65);
+    }
+
+    .iconBox {
+      background: $lime-400;
+      color: $charcoal-900;
+    }
+  }
+}
+
+.top {
+  @include flex-between;
+}
+
+.label {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: $gray-600;
+}
+
+.iconBox {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  @include flex-center;
+  background: rgba(199, 243, 107, 0.28);
+  color: $charcoal-900;
+}
+
+.value {
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.trend {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: $success;
+}

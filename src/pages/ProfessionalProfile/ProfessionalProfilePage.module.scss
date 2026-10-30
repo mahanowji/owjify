@@ -1,0 +1,360 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.heroBackdrop {
+  position: relative;
+  height: clamp(175px, 21vw, 235px);
+  overflow: hidden;
+  background: $charcoal-900;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(17, 18, 15, 0.35) 0%,
+      rgba(17, 18, 15, 0.78) 100%
+    );
+  }
+}
+
+.backLinkWrap {
+  position: absolute;
+  top: 1.15rem;
+  inset-inline: 0;
+  z-index: 3;
+}
+
+.backPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: $radius-pill;
+  background: rgba(17, 18, 15, 0.62);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: $offwhite-100;
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: $charcoal-900;
+    border-color: $lime-400;
+    color: $lime-400;
+  }
+}
+
+.headerCard {
+  background: $white;
+  border: 1px solid rgba(17, 18, 15, 0.09);
+  border-radius: 24px;
+  box-shadow: 0 18px 46px rgba(17, 18, 15, 0.07);
+  padding: clamp(1.35rem, 2.8vw, 2.2rem);
+  margin-top: -64px;
+  position: relative;
+  z-index: 4;
+  display: block;
+}
+
+.topProfileGrid {
+  display: grid;
+  grid-template-columns: 1fr 310px;
+  gap: 1.75rem;
+  align-items: center;
+
+  @include tablet {
+    grid-template-columns: 1fr;
+  }
+}
+
+.identityRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.35rem;
+
+  @include small-mobile {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.avatarFrame {
+  position: relative;
+  width: 98px;
+  height: 98px;
+  border-radius: 22px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 3px solid $white;
+  outline: 1px solid rgba(17, 18, 15, 0.12);
+  box-shadow: 0 10px 26px rgba(17, 18, 15, 0.14);
+  background: $offwhite-200;
+}
+
+.onlineBadge {
+  position: absolute;
+  bottom: 6px;
+  inset-inline-end: 6px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #289e67;
+  border: 2px solid $white;
+  z-index: 2;
+}
+
+.identityBody {
+  min-width: 0;
+  flex: 1;
+}
+
+.nameHeadingRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.proName {
+  font-size: clamp(1.35rem, 2.3vw, 1.8rem);
+  font-weight: 900;
+  color: $charcoal-900;
+  line-height: 1.25;
+}
+
+.verifiedChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: $radius-pill;
+  background: rgba(40, 158, 103, 0.11);
+  color: #1f8254;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.proHeadline {
+  color: $gray-700;
+  font-size: 0.94rem;
+  font-weight: 600;
+  margin-top: 0.3rem;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.25rem;
+  margin-top: 0.85rem;
+  font-size: 0.82rem;
+  color: $gray-600;
+}
+
+.metaPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.ratingPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: $radius-pill;
+  background: rgba(229, 153, 52, 0.13);
+  color: #8f5608;
+  font-weight: 800;
+  font-size: 0.78rem;
+}
+
+/* Redesigned Cohesive Action Box */
+.actionCard {
+  background: $offwhite-100;
+  border: 1px solid rgba(17, 18, 15, 0.08);
+  border-radius: 18px;
+  padding: 1.05rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.actionStatusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: $gray-700;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid rgba(17, 18, 15, 0.07);
+}
+
+.pulseDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #289e67;
+  box-shadow: 0 0 0 3px rgba(40, 158, 103, 0.18);
+  display: inline-block;
+}
+
+.primaryWithIconsRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.primaryActionBtn {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 40px;
+  padding: 0 1rem;
+  border-radius: 12px;
+  background: $charcoal-900;
+  color: $offwhite-100;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #22241e;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(17, 18, 15, 0.16);
+  }
+}
+
+.iconActionBtn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  max-height: 40px;
+  padding: 0;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: $white;
+  border: 1px solid rgba(17, 18, 15, 0.14);
+  color: $charcoal-900;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+
+  &:hover {
+    background: $charcoal-900;
+    border-color: $charcoal-900;
+    color: $lime-400;
+    transform: translateY(-1px);
+  }
+
+  &.savedState {
+    background: $charcoal-900;
+    border-color: $charcoal-900;
+    color: $lime-400;
+  }
+}
+
+.secondaryBtnRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.secondaryActionBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  min-height: 36px;
+  padding: 0.42rem 0.75rem;
+  border-radius: 10px;
+  background: $white;
+  border: 1px solid rgba(17, 18, 15, 0.13);
+  color: $charcoal-900;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  transition: all 0.18s ease;
+
+  &:hover {
+    border-color: $charcoal-900;
+    background: $offwhite-200;
+  }
+
+  &.savedState {
+    background: rgba(199, 243, 107, 0.35);
+    border-color: $charcoal-900;
+    color: $charcoal-900;
+  }
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.9rem;
+  margin-top: 1.5rem;
+  padding-top: 1.35rem;
+  border-top: 1px solid rgba(17, 18, 15, 0.08);
+
+  @include tablet {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.statBox {
+  background: $offwhite-100;
+  border: 1px solid rgba(17, 18, 15, 0.06);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+
+  strong {
+    font-size: 1.08rem;
+    font-weight: 900;
+    color: $charcoal-900;
+  }
+
+  span {
+    font-size: 0.75rem;
+    color: $gray-600;
+    font-weight: 600;
+  }
+}
+
+.panelCard {
+  @include card-light;
+  padding: clamp(1.25rem, 2.5vw, 1.85rem);
+  border-radius: 20px;
+}
+
+.portfolioCard {
+  @include card-light;
+  border-radius: 18px;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: $shadow-md;
+  }
+}
+
+.portfolioImg {
+  height: 215px;
+  overflow: hidden;
+  background: $offwhite-200;
+}

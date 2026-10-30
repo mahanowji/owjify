@@ -1,0 +1,145 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.card {
+  @include card-light;
+  padding: 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+  height: 100%;
+
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow: $shadow-md;
+    border-color: rgba(17, 18, 15, 0.22);
+  }
+}
+
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.avatarWrap {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid $lime-400;
+}
+
+.onlineDot {
+  position: absolute;
+  bottom: 3px;
+  inset-inline-end: 3px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #289e67;
+  border: 2px solid $white;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: $charcoal-900;
+}
+
+.role {
+  font-size: 0.82rem;
+  color: $gray-600;
+  margin-top: 2px;
+  @include line-clamp(2);
+}
+
+.favBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  @include flex-center;
+  background: $offwhite-100;
+  border: 1px solid rgba(17, 18, 15, 0.1);
+  color: $charcoal-900;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+
+  &.active {
+    background: $charcoal-900;
+    border-color: $charcoal-900;
+    color: $lime-400;
+  }
+}
+
+.statsStrip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  padding: 0.72rem;
+  border-radius: $radius-sm;
+  background: $offwhite-100;
+  text-align: center;
+}
+
+.statVal {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: $charcoal-900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.statLbl {
+  font-size: 0.7rem;
+  color: $gray-500;
+}
+
+.skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.skillChip {
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.26rem 0.65rem;
+  border-radius: $radius-pill;
+  background: rgba(17, 18, 15, 0.05);
+  color: $gray-700;
+}
+
+.footer {
+  margin-top: auto;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(17, 18, 15, 0.07);
+  @include flex-between;
+  gap: 0.6rem;
+}
+
+.loc {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.79rem;
+  color: $gray-600;
+}
