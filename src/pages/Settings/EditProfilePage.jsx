@@ -2,7 +2,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Grid, Stack, Chip } from '@mui/material';
-import { Save, Upload, Plus, BriefcaseBusiness } from 'lucide-react';
+import {
+  Save,
+  Upload,
+  Plus,
+  BriefcaseBusiness,
+} from 'lucide-react';
+
 import PageTransition from '../../components/common/PageTransition';
 import SmartImage from '../../components/common/SmartImage';
 import { LOCATIONS } from '../../data/locations';
@@ -14,6 +20,7 @@ import styles from './SettingsPages.module.scss';
 
 export default function EditProfilePage() {
   const { lang, l } = useLanguage();
+
   const {
     user,
     isProfessional,
@@ -27,29 +34,45 @@ export default function EditProfilePage() {
   const navigate = useNavigate();
 
   const [dirty, setDirty] = useState(false);
+
   const [fullName, setFullName] = useState(() => l(user?.fullName || ''));
   const [title, setTitle] = useState(() => l(user?.title || ''));
   const [locationId, setLocationId] = useState(user?.locationId || 'tehran');
-  const [experienceYears, setExperienceYears] = useState(user?.experienceYears || 5);
+  const [experienceYears, setExperienceYears] = useState(
+    user?.experienceYears || 5
+  );
   const [bio, setBio] = useState(() => l(user?.bio || ''));
   const [avatar, setAvatar] = useState(user?.avatar || '');
-  const [skills, setSkills] = useState(() => (user?.skills || []).map((s) => l(s)));
+  const [skills, setSkills] = useState(() =>
+    (user?.skills || []).map((s) => l(s))
+  );
+
   const [skillInput, setSkillInput] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const [becomeProfessional, setBecomeProfessional] = useState(false);
+  // وضعیت نوع حساب کاربری
+  const [accountType, setAccountType] = useState(
+    user?.accountType || (isProfessional ? 'professional' : 'customer')
+  );
 
-  const professionalMode = isProfessional || becomeProfessional;
+  // تعیین نمایش فیلدهای تخصصی
+  const professionalMode = accountType === 'professional';
 
+  // هماهنگ‌سازی اطلاعات اولیه کاربر
   useEffect(() => {
     if (!dirty && user) {
       setFullName(l(user.fullName || ''));
       setTitle(l(user.title || ''));
+      setLocationId(user.locationId || 'tehran');
+      setExperienceYears(user.experienceYears || 5);
       setBio(l(user.bio || ''));
+      setAvatar(user.avatar || '');
       setSkills((user.skills || []).map((s) => l(s)));
+      setAccountType(user.accountType || 'customer');
     }
   }, [lang, user, dirty, l]);
 
+  // تغییر تصویر پروفایل
   const handleAvatarFile = (e) => {
     const file = e.target.files?.[0];
 
@@ -67,37 +90,51 @@ export default function EditProfilePage() {
     reader.readAsDataURL(file);
   };
 
+  // افزودن مهارت
   const addSkill = () => {
     const clean = skillInput.trim();
 
     if (!clean || skills.includes(clean)) return;
 
     setDirty(true);
-    setSkills((p) => [...p, clean]);
+    setSkills((prev) => [...prev, clean]);
     setSkillInput('');
   };
 
-  const handleBecomeProfessional = () => {
+  // تغییر نوع حساب کاربری
+  const handleChangeAccountType = () => {
+    const newAccountType =
+      accountType === 'professional' ? 'customer' : 'professional';
+
     const confirmed = window.confirm(
       lang === 'fa'
-        ? 'آیا مطمئن هستید که می‌خواهید حساب کاربری خود را به حساب متخصص تبدیل کنید؟'
-        : 'Are you sure you want to convert your account to a professional account?'
+        ? newAccountType === 'professional'
+          ? 'آیا مطمئن هستید که می‌خواهید حساب خود را به متخصص تبدیل کنید؟'
+          : 'آیا مطمئن هستید که می‌خواهید به حساب کارفرما برگردید؟'
+        : newAccountType === 'professional'
+          ? 'Are you sure you want to become a professional?'
+          : 'Are you sure you want to switch back to a customer account?'
     );
 
     if (!confirmed) return;
 
-    setBecomeProfessional(true);
+    setAccountType(newAccountType);
     setDirty(true);
 
     showToast({
       title:
         lang === 'fa'
-          ? 'اطلاعات تخصصی را تکمیل کرده و ذخیره کنید'
-          : 'Complete your professional information and save',
+          ? newAccountType === 'professional'
+            ? 'اطلاعات تخصصی خود را تکمیل کرده و ذخیره کنید'
+            : 'نوع حساب به کارفرما تغییر کرد؛ برای ثبت نهایی ذخیره کنید'
+          : newAccountType === 'professional'
+            ? 'Complete your professional information and save'
+            : 'Account type changed to customer. Save to confirm.',
       type: 'success',
     });
   };
 
+  // ذخیره اطلاعات پروفایل
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -113,12 +150,17 @@ export default function EditProfilePage() {
         avatar,
         skills,
 
-        ...(becomeProfessional && {
-          accountType: 'professional',
-        }),
+        // تغییر نوع حساب برای مشتری و متخصص
+        ...(
+          user?.accountType === 'customer' ||
+          user?.accountType === 'professional'
+            ? { accountType }
+            : {}
+        ),
       });
 
-      if (professionalMode) {
+      // فقط در صورت متخصص بودن، اطلاعات را با Marketplace هماهنگ کن
+      if (accountType === 'professional') {
         syncUserToProfessional(updated);
       }
 
@@ -173,7 +215,10 @@ export default function EditProfilePage() {
         </h1>
 
         <form className={styles.panel} onSubmit={handleSubmit}>
-          {!isProfessional && !becomeProfessional && user?.accountType === 'customer' && (
+
+          {/* تغییر نوع حساب کاربری */}
+          {(user?.accountType === 'customer' ||
+            user?.accountType === 'professional') && (
             <div
               style={{
                 padding: '18px',
@@ -191,35 +236,49 @@ export default function EditProfilePage() {
               >
                 <div>
                   <strong>
-                    {lang === 'fa'
-                      ? 'می‌خواهید متخصص شوید؟'
-                      : 'Want to become a professional?'}
+                    {professionalMode
+                      ? lang === 'fa'
+                        ? 'می‌خواهید به حساب کارفرما برگردید؟'
+                        : 'Want to switch back to a customer account?'
+                      : lang === 'fa'
+                        ? 'می‌خواهید متخصص شوید؟'
+                        : 'Want to become a professional?'}
                   </strong>
 
                   <p style={{ margin: '6px 0 0', fontSize: '0.85rem' }}>
-                    {lang === 'fa'
-                      ? 'با تبدیل حساب خود به متخصص، می‌توانید مهارت‌ها و سوابق کاری خود را معرفی کنید.'
-                      : 'Convert your account to showcase your skills and experience.'}
+                    {professionalMode
+                      ? lang === 'fa'
+                        ? 'با بازگشت به حساب کارفرما، پروفایل شما دیگر به عنوان متخصص نمایش داده نمی‌شود.'
+                        : 'Switch back to a customer account and your profile will no longer be displayed as a professional.'
+                      : lang === 'fa'
+                        ? 'با تبدیل حساب خود به متخصص، می‌توانید مهارت‌ها و سوابق کاری خود را معرفی کنید.'
+                        : 'Convert your account to showcase your skills and experience.'}
                   </p>
                 </div>
 
                 <button
                   type="button"
-                  onClick={handleBecomeProfessional}
+                  onClick={handleChangeAccountType}
                   className="owj-btn owj-btn--lime"
                   style={{ whiteSpace: 'nowrap' }}
                 >
                   <BriefcaseBusiness size={16} />
+
                   <span>
-                    {lang === 'fa'
-                      ? 'تبدیل به متخصص'
-                      : 'Become Professional'}
+                    {professionalMode
+                      ? lang === 'fa'
+                        ? 'بازگشت به کارفرما'
+                        : 'Switch to Customer'
+                      : lang === 'fa'
+                        ? 'تبدیل به متخصص'
+                        : 'Become Professional'}
                   </span>
                 </button>
               </Stack>
             </div>
           )}
 
+          {/* تصویر پروفایل */}
           <Stack
             direction="row"
             spacing={2}
@@ -261,6 +320,7 @@ export default function EditProfilePage() {
             </label>
           </Stack>
 
+          {/* اطلاعات پایه */}
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <div className={styles.field}>
@@ -349,6 +409,7 @@ export default function EditProfilePage() {
             )}
           </Grid>
 
+          {/* درباره من */}
           <div className={styles.field}>
             <label>
               {professionalMode
@@ -370,6 +431,7 @@ export default function EditProfilePage() {
             />
           </div>
 
+          {/* مهارت‌های تخصصی */}
           {professionalMode && (
             <div className={styles.field}>
               <label>
@@ -419,7 +481,9 @@ export default function EditProfilePage() {
                     label={sk}
                     onDelete={() => {
                       setDirty(true);
-                      setSkills((p) => p.filter((item) => item !== sk));
+                      setSkills((prev) =>
+                        prev.filter((item) => item !== sk)
+                      );
                     }}
                     color="primary"
                     size="small"
@@ -429,6 +493,7 @@ export default function EditProfilePage() {
             </div>
           )}
 
+          {/* دکمه‌های فرم */}
           <Stack
             direction="row"
             justifyContent="flex-end"
