@@ -10,7 +10,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { Search, Sparkles, Compass, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { Search, Compass, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import PageTransition from '../../components/common/PageTransition';
 import SmartImage from '../../components/common/SmartImage';
 import ChatThread from '../../components/messaging/ChatThread';
@@ -27,7 +27,6 @@ export default function MessagesPage() {
     conversations,
     sendMessageInConversation,
     markConversationRead,
-    openSkillRequestModal,
   } = useMarketplace();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -37,6 +36,13 @@ export default function MessagesPage() {
   const initialBox = searchParams.get('box') || 'all';
   const [boxFilter, setBoxFilter] = useState(initialBox);
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const paramBox = searchParams.get('box');
+    if (paramBox && ['all', 'received', 'sent'].includes(paramBox)) {
+      setBoxFilter(paramBox);
+    }
+  }, [searchParams]);
 
   const receivedCount = useMemo(
     () => conversations.filter((c) => c.direction === 'received').length,
@@ -89,7 +95,9 @@ export default function MessagesPage() {
 
   const handleSelect = (id) => {
     setSelectedId(id);
-    setSearchParams({ conv: id });
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('conv', id);
+    setSearchParams(nextParams);
     setMobileViewingChat(true);
   };
 
@@ -101,51 +109,38 @@ export default function MessagesPage() {
           justifyContent="space-between"
           alignItems={{ xs: 'flex-start', sm: 'center' }}
           spacing={1.5}
-          sx={{ mb: 2.5 }}
+          sx={{ mb: 2.2 }}
         >
           <div>
             <h1 style={{ fontSize: 'clamp(1.35rem, 2.5vw, 1.75rem)', fontWeight: 900 }}>
               {isProfessional
                 ? lang === 'fa'
-                  ? 'صندوق پیام‌های متخصص (مشتریان و ارسالی‌ها)'
-                  : 'Provider Messenger (Customer Inbox & Sent)'
+                  ? 'پیام‌های متخصص'
+                  : 'Specialist Messages'
                 : lang === 'fa'
-                ? 'پیام‌های ارسالی من به متخصصان'
-                : 'Messages Sent to Providers'}
+                ? 'پیام‌های من به متخصصان'
+                : 'My Messages'}
             </h1>
             <p style={{ fontSize: '0.88rem', color: '#666860' }}>
               {isProfessional
                 ? lang === 'fa'
-                  ? 'مشاهده پیام‌های دریافتی از مشتریان و همچنین پیام‌ها و درخواست‌های مهارتی که به دیگران فرستاده‌اید'
-                  : 'Manage incoming inquiries from customers alongside messages and skill requests you sent to others'
+                  ? 'تفکیک پیام‌های دریافتی شما از درخواست‌هایی که به سایر متخصصان ارسال کرده‌اید'
+                  : 'Incoming inquiries separated from requests you sent to other specialists'
                 : lang === 'fa'
-                ? 'گفتگوها و استعلام‌هایی که برای متخصصان اوجیفای ارسال کرده‌اید'
-                : 'Track all inquiries and messages you have sent to OWJIFY providers'}
+                ? 'گفتگوها و استعلام‌هایی که برای متخصصان ارسال کرده‌اید'
+                : 'Conversations and inquiries you have sent to specialists'}
             </p>
           </div>
 
-          {isProfessional ? (
-            <button
-              type="button"
-              onClick={() => openSkillRequestModal()}
-              className="owj-btn owj-btn--lime owj-btn--sm"
-            >
-              <Sparkles size={15} />
-              <span>
-                {lang === 'fa' ? 'ارسال درخواست مهارت جدید' : 'Send Skill Request'}
-              </span>
-            </button>
-          ) : (
-            <Link to="/explore" className="owj-btn owj-btn--dark owj-btn--sm">
-              <Compass size={15} />
-              <span>
-                {lang === 'fa' ? 'کاوش متخصصان جدید' : 'Browse Providers'}
-              </span>
-            </Link>
-          )}
+          <Link to="/explore" className="owj-btn owj-btn--dark owj-btn--sm">
+            <Compass size={15} />
+            <span>
+              {lang === 'fa' ? 'مشاهده آگهی‌ها' : 'Browse Listings'}
+            </span>
+          </Link>
         </Stack>
 
-        {/* Provider Inbox / Sent Filter Tabs */}
+        {/* Specialist Two-Bucket Distinction: Received vs Requests to Other Specialists */}
         {isProfessional && (
           <Box
             sx={{
@@ -165,8 +160,8 @@ export default function MessagesPage() {
               scrollButtons="auto"
               sx={{
                 '& .MuiTab-root': {
-                  fontWeight: 700,
-                  fontSize: '0.86rem',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
                   minHeight: 44,
                   color: '#666860',
                 },
@@ -179,7 +174,7 @@ export default function MessagesPage() {
                 value="all"
                 label={
                   lang === 'fa'
-                    ? `همه گفتگوها (${formatNumber(conversations.length, lang)})`
+                    ? `همه (${formatNumber(conversations.length, lang)})`
                     : `All (${conversations.length})`
                 }
               />
@@ -187,16 +182,16 @@ export default function MessagesPage() {
                 value="received"
                 label={
                   lang === 'fa'
-                    ? `دریافتی از مشتریان (${formatNumber(receivedCount, lang)})`
-                    : `From Customers (${receivedCount})`
+                    ? `پیام‌های دریافتی من (${formatNumber(receivedCount, lang)})`
+                    : `Received Inquiries (${receivedCount})`
                 }
               />
               <Tab
                 value="sent"
                 label={
                   lang === 'fa'
-                    ? `ارسالی به دیگران (${formatNumber(sentCount, lang)})`
-                    : `Sent to Others (${sentCount})`
+                    ? `درخواست‌های من به سایر متخصصان (${formatNumber(sentCount, lang)})`
+                    : `Requests to Other Specialists (${sentCount})`
                 }
               />
             </Tabs>
@@ -234,38 +229,27 @@ export default function MessagesPage() {
                         {isProfessional
                           ? boxFilter === 'received'
                             ? lang === 'fa'
-                              ? 'هنوز پیامی از مشتریان دریافت نشده است.'
-                              : 'No incoming customer messages yet.'
+                              ? 'هنوز پیام دریافتی جدیدی ندارید.'
+                              : 'No incoming messages yet.'
                             : boxFilter === 'sent'
                             ? lang === 'fa'
-                              ? 'هنوز پیام یا درخواست مهارتی برای دیگران نفرستاده‌اید.'
-                              : 'You have not sent any messages or skill requests to others yet.'
+                              ? 'هنوز درخواستی برای سایر متخصصان ارسال نکرده‌اید.'
+                              : 'You have not contacted other specialists yet.'
                             : lang === 'fa'
                             ? 'گفتگویی یافت نشد.'
                             : 'No matching conversations.'
                           : lang === 'fa'
                           ? 'هنوز پیامی برای متخصصان ارسال نکرده‌اید.'
-                          : 'You have not sent any messages to providers yet.'}
+                          : 'You have not sent any messages to specialists yet.'}
                       </p>
-                      {isProfessional && boxFilter === 'sent' ? (
-                        <button
-                          type="button"
-                          onClick={() => openSkillRequestModal()}
-                          className="owj-btn owj-btn--lime owj-btn--sm"
-                        >
-                          {lang === 'fa' ? 'ارسال درخواست مهارت' : 'Send Skill Request'}
-                        </button>
-                      ) : (
-                        <Link to="/explore" className="owj-btn owj-btn--dark owj-btn--sm">
-                          {lang === 'fa' ? 'مشاهده متخصصان' : 'Explore Providers'}
-                        </Link>
-                      )}
+                      <Link to="/explore" className="owj-btn owj-btn--dark owj-btn--sm">
+                        {lang === 'fa' ? 'مشاهده آگهی‌ها' : 'Explore Listings'}
+                      </Link>
                     </div>
                   ) : (
                     filteredConvs.map((conv) => {
                       const lastMsg = conv.messages?.[conv.messages.length - 1];
                       const isIncoming = conv.direction === 'received';
-                      const isSkillReq = conv.threadKind === 'skill_request';
 
                       return (
                         <button
@@ -292,45 +276,41 @@ export default function MessagesPage() {
                               </span>
                             </div>
 
-                            {/* Clear Role / Direction Tag */}
+                            {/* Simple, Crystal-Clear Direction Badge */}
                             <div style={{ marginTop: 2, marginBottom: 3 }}>
                               <span
                                 style={{
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: 3,
-                                  padding: '1px 7px',
+                                  padding: '1px 8px',
                                   borderRadius: 999,
                                   fontSize: '0.67rem',
                                   fontWeight: 800,
                                   background: isIncoming
                                     ? 'rgba(40, 158, 103, 0.14)'
-                                    : isSkillReq
+                                    : isProfessional
                                     ? '#C7F36B'
-                                    : 'rgba(17, 18, 15, 0.07)',
+                                    : 'rgba(17, 18, 15, 0.08)',
                                   color: isIncoming ? '#1c7c4d' : '#11120F',
                                 }}
                               >
                                 {isIncoming ? (
                                   <>
                                     <ArrowDownLeft size={11} />
-                                    {lang === 'fa' ? 'از مشتری' : 'From Customer'}
+                                    {lang === 'fa' ? 'پیام دریافتی متخصص' : 'Received Inquiry'}
                                   </>
-                                ) : isSkillReq ? (
+                                ) : isProfessional ? (
                                   <>
-                                    <Sparkles size={11} />
-                                    {lang === 'fa' ? 'درخواست مهارت ارسالی' : 'Skill Request Sent'}
+                                    <ArrowUpRight size={11} />
+                                    {lang === 'fa'
+                                      ? 'درخواست من به متخصص دیگر'
+                                      : 'Sent to Specialist'}
                                   </>
                                 ) : (
                                   <>
                                     <ArrowUpRight size={11} />
-                                    {isProfessional
-                                      ? lang === 'fa'
-                                        ? 'ارسالی به دیگران'
-                                        : 'Sent to Specialist'
-                                      : lang === 'fa'
-                                      ? 'ارسالی به متخصص'
-                                      : 'Sent to Provider'}
+                                    {lang === 'fa' ? 'ارسالی به متخصص' : 'Sent to Specialist'}
                                   </>
                                 )}
                               </span>
@@ -341,9 +321,9 @@ export default function MessagesPage() {
                             </div>
                           </div>
 
-                          {conv.unreadCount > 0 && (
+                          {conv.unread > 0 && (
                             <span className={styles.unreadBadge}>
-                              {formatNumber(conv.unreadCount, lang)}
+                              {formatNumber(conv.unread, lang)}
                             </span>
                           )}
                         </button>

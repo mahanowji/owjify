@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Stack, Chip } from '@mui/material';
-import { Send, MessageSquare, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
+import { Send, MessageSquare, ArrowRight, ArrowLeft } from 'lucide-react';
 import SmartImage from '../common/SmartImage';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
@@ -30,11 +30,11 @@ export default function ChatThread({ conversation, onSend, onMobileBack }) {
         <p style={{ fontSize: '0.86rem', maxWidth: 340 }}>
           {isProfessional
             ? lang === 'fa'
-              ? 'پیام‌های دریافتی از مشتریان و پیام‌ها یا درخواست‌های مهارتی که برای سایر متخصصان فرستاده‌اید در اینجا نمایش داده می‌شود.'
-              : 'View incoming inquiries from customers as well as messages and skill requests you sent to others.'
+              ? 'پیام‌های دریافتی شما و درخواست‌هایی که به سایر متخصصان ارسال کرده‌اید در اینجا قابل مشاهده است.'
+              : 'View your incoming inquiries alongside requests you sent to other specialists.'
             : lang === 'fa'
-            ? 'پیام‌ها و استعلام‌هایی که برای متخصصان اوجیفای ارسال کرده‌اید در این بخش نمایش داده می‌شود.'
-            : 'View the messages and service inquiries you have sent to OWJIFY providers.'}
+            ? 'پیام‌ها و استعلام‌هایی که برای متخصصان ارسال کرده‌اید در این بخش نمایش داده می‌شود.'
+            : 'View the messages and inquiries you have sent to OWJIFY specialists.'}
         </p>
       </div>
     );
@@ -48,23 +48,19 @@ export default function ChatThread({ conversation, onSend, onMobileBack }) {
   };
 
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+  const isIncoming = conversation.direction === 'received';
 
-  const badgeLabel =
-    conversation.threadKind === 'skill_request'
-      ? lang === 'fa'
-        ? `درخواست مهارت: ${l(conversation.requestedSkill) || ''}`
-        : `Skill Request: ${l(conversation.requestedSkill) || ''}`
-      : conversation.direction === 'received'
-      ? lang === 'fa'
-        ? 'دریافتی از مشتری'
-        : 'Received from Customer'
-      : isProfessional
-      ? lang === 'fa'
-        ? 'ارسالی به دیگران'
-        : 'Sent to Specialist'
-      : lang === 'fa'
-      ? 'ارسالی به متخصص'
-      : 'Sent to Provider';
+  const badgeLabel = isIncoming
+    ? lang === 'fa'
+      ? 'پیام دریافتی متخصص'
+      : 'Received Inquiry'
+    : isProfessional
+    ? lang === 'fa'
+      ? 'درخواست من به متخصص دیگر'
+      : 'Request to Specialist'
+    : lang === 'fa'
+    ? 'ارسالی به متخصص'
+    : 'Sent to Specialist';
 
   return (
     <div className={styles.chatPane}>
@@ -91,24 +87,17 @@ export default function ChatThread({ conversation, onSend, onMobileBack }) {
               <span className={styles.name}>{l(conversation.participantName)}</span>
               <Chip
                 size="small"
-                icon={
-                  conversation.threadKind === 'skill_request' ? (
-                    <Sparkles size={12} />
-                  ) : undefined
-                }
                 label={badgeLabel}
                 sx={{
                   height: 22,
                   fontSize: '0.7rem',
                   fontWeight: 800,
-                  bgcolor:
-                    conversation.direction === 'received'
-                      ? 'rgba(40, 158, 103, 0.14)'
-                      : conversation.threadKind === 'skill_request'
-                      ? '#C7F36B'
-                      : 'rgba(17, 18, 15, 0.08)',
-                  color:
-                    conversation.direction === 'received' ? '#1e7e50' : '#11120F',
+                  bgcolor: isIncoming
+                    ? 'rgba(40, 158, 103, 0.14)'
+                    : isProfessional
+                    ? '#C7F36B'
+                    : 'rgba(17, 18, 15, 0.08)',
+                  color: isIncoming ? '#1e7e50' : '#11120F',
                 }}
               />
             </Stack>
@@ -135,7 +124,7 @@ export default function ChatThread({ conversation, onSend, onMobileBack }) {
             }}
           >
             {l(conversation.participantRole) ||
-              (lang === 'fa' ? 'کارفرما / مشتری' : 'Customer')}
+              (lang === 'fa' ? 'کاربر متقاضی' : 'Client')}
           </span>
         )}
       </div>
@@ -176,10 +165,10 @@ export default function ChatThread({ conversation, onSend, onMobileBack }) {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder={
-            conversation.direction === 'received'
+            isIncoming
               ? lang === 'fa'
-                ? 'پاسخ خود به مشتری را بنویسید...'
-                : 'Write your reply to this customer...'
+                ? 'پاسخ خود را بنویسید...'
+                : 'Write your reply...'
               : lang === 'fa'
               ? 'پیام خود را بنویسید و Enter بزنید...'
               : 'Write a message...'

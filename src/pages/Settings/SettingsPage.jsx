@@ -134,26 +134,53 @@ export default function SettingsPage() {
               <h2 className={styles.secTitle}>
                 {lang === 'fa' ? 'نقش حساب در اوجیفای' : 'Marketplace Account Type'}
               </h2>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                <button
-                  type="button"
-                  onClick={() => handleRoleSwitch('customer')}
-                  className={`owj-btn ${
-                    user?.accountType === 'customer' ? 'owj-btn--dark' : 'owj-btn--outline'
-                  } owj-btn--sm`}
+              {user?.accountType === 'admin' || user?.accountType === 'operator' ? (
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.45rem 0.9rem',
+                    borderRadius: '999px',
+                    background: '#11120F',
+                    color: '#C7F36B',
+                    fontSize: '0.82rem',
+                    fontWeight: 800,
+                  }}
                 >
-                  {lang === 'fa' ? 'کارفرما / مشتری' : 'Customer'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleRoleSwitch('professional')}
-                  className={`owj-btn ${
-                    user?.accountType === 'professional' ? 'owj-btn--dark' : 'owj-btn--outline'
-                  } owj-btn--sm`}
-                >
-                  {lang === 'fa' ? 'متخصص / ارائه‌دهنده' : 'Professional'}
-                </button>
-              </Stack>
+                  <ShieldCheck size={15} />
+                  <span>
+                    {user?.accountType === 'admin'
+                      ? lang === 'fa'
+                        ? 'مدیر ارشد سامانه (Admin & CRM)'
+                        : 'Platform Administrator (Admin & CRM)'
+                      : lang === 'fa'
+                      ? 'اپراتور پشتیبانی (Support Operator)'
+                      : 'Support Operator'}
+                  </span>
+                </div>
+              ) : (
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  <button
+                    type="button"
+                    onClick={() => handleRoleSwitch('customer')}
+                    className={`owj-btn ${
+                      user?.accountType === 'customer' ? 'owj-btn--dark' : 'owj-btn--outline'
+                    } owj-btn--sm`}
+                  >
+                    {lang === 'fa' ? 'کارفرما / مشتری' : 'Customer'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRoleSwitch('professional')}
+                    className={`owj-btn ${
+                      user?.accountType === 'professional' ? 'owj-btn--dark' : 'owj-btn--outline'
+                    } owj-btn--sm`}
+                  >
+                    {lang === 'fa' ? 'متخصص / ارائه‌دهنده' : 'Professional'}
+                  </button>
+                </Stack>
+              )}
             </div>
           </Grid>
         </Grid>

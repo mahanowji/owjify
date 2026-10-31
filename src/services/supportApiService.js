@@ -4,16 +4,7 @@ import { SEED_SUPPORT_TICKETS } from '../data/supportTickets';
 /**
  * OWJIFY Support & Operator REST API Client
  * ---------------------------------------------------------------------------
- * Designed for direct integration with backend REST endpoints:
- * - POST   {API_BASE}/operator/auth/login
- * - GET    {API_BASE}/support/tickets
- * - POST   {API_BASE}/support/tickets
- * - POST   {API_BASE}/operator/tickets/:id/reply
- * - PATCH  {API_BASE}/operator/tickets/:id/status
- *
- * When VITE_API_BASE_URL is configured, requests are dispatched via fetch()
- * with Bearer token authorization. In standalone frontend mode, operations
- * fall back cleanly to localStorage state so every workflow works out of the box.
+ * In standalone frontend mode, operations persist cleanly in localStorage state.
  */
 
 const API_BASE =
@@ -42,6 +33,7 @@ export const SUPPORT_API_ENDPOINTS = {
   listTickets: `${API_BASE || '/api'}/support/tickets`,
   replyTicket: (id) => `${API_BASE || '/api'}/operator/tickets/${id}/reply`,
   updateStatus: (id) => `${API_BASE || '/api'}/operator/tickets/${id}/status`,
+  escalateTicket: (id) => `${API_BASE || '/api'}/operator/tickets/${id}/escalate`,
 };
 
 export const supportApiService = {
@@ -64,7 +56,7 @@ export const supportApiService = {
           return data;
         }
       } catch {
-        // Graceful fallback to local store if remote API is unreachable
+        // Fallback to local store
       }
     }
     return getLocalTickets();
@@ -81,7 +73,7 @@ export const supportApiService = {
       status: 'open',
       reporterUserId: payload.reporterUserId || null,
       reporterRole: payload.reporterRole || 'guest',
-      reporterName: payload.reporterName || 'کاربر اوجیفای',
+      reporterName: payload.reporterName || 'کاربر مهمان | Guest User',
       reporterEmail: payload.reporterEmail || '',
       relatedAdId: payload.relatedAdId || null,
       relatedAdTitle: payload.relatedAdTitle || null,
@@ -93,7 +85,7 @@ export const supportApiService = {
         {
           id: `st_m_${Date.now()}`,
           authorRole: 'reporter',
-          authorName: payload.reporterName || 'User',
+          authorName: payload.reporterName || 'کاربر مهمان | Guest User',
           text:
             typeof payload.message === 'string'
               ? { fa: payload.message, en: payload.message }
@@ -131,7 +123,10 @@ export const supportApiService = {
     return newTicket;
   },
 
-  async replyToTicket({ ticketId, replyText, authorName, authorRole = 'operator', nextStatus }, token = null) {
+  async replyToTicket(
+    { ticketId, replyText, authorName, authorRole = 'operator', nextStatus },
+    token = null
+  ) {
     const now = new Date().toISOString();
     const msg = {
       id: `st_m_${Date.now()}`,
@@ -167,6 +162,52 @@ export const supportApiService = {
         messages: [...(t.messages || []), msg],
       };
     });
+
+    saveLocalTickets(nextList);
+    return nextList;
+  },
+
+  async escalateTicket({ ticketId, reason, authorName }, token = null) {
+    const now = new Date().toISOString();
+    const noteTextFa = `ارجاع به مدیر ارشد (Escalation): ${reason}`;
+    const noteTextEn = `Escalated to Platform Admin: ${reason}`;
+    const msg = {
+      id: `st_esc_${Date.now()}`,
+      authorRole: 'operator',
+      authorName: authorName || 'اپراتور پشتیبانی | Support Operator',
+      isEscalationNote: true,
+      text: { fa: noteTextFa, en: noteTextEn },
+      createdAt: now,
+    };
+
+    if (API_BASE) {
+      try {
+        await fetch(`${API_BASE}/operator/tickets/${ticketId}/escalate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ reason }),
+        });
+      } catch {
+        // Fallback to local persistence
+      }
+    }
+
+    const nextList = getLocalTickets().map((t) =>
+      t.id === ticketId
+        ? {
+            ...t,
+            status: 'escalated',
+            priority: 'urgent',
+            escalatedAt: now,
+            escalationReason: { fa: reason, en: reason },
+            updatedAt: now,
+            messages: [...(t.messages || []), msg],
+          }
+        : t
+    );
 
     saveLocalTickets(nextList);
     return nextList;

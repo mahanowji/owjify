@@ -1,5 +1,15 @@
 const PERSIAN_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
 
+const DAY_LABELS = {
+  sat: { fa: 'شنبه', en: 'Sat' },
+  sun: { fa: 'یکشنبه', en: 'Sun' },
+  mon: { fa: 'دوشنبه', en: 'Mon' },
+  tue: { fa: 'سه‌شنبه', en: 'Tue' },
+  wed: { fa: 'چهارشنبه', en: 'Wed' },
+  thu: { fa: 'پنج‌شنبه', en: 'Thu' },
+  fri: { fa: 'جمعه', en: 'Fri' },
+};
+
 export function toPersianDigits(input) {
   if (input === null || input === undefined) return '';
   return String(input).replace(/\d/g, (d) => PERSIAN_DIGITS[Number(d)]);
@@ -13,11 +23,53 @@ export function formatNumber(num, lang = 'fa') {
 
 export function loc(value, lang = 'fa') {
   if (value === null || value === undefined) return '';
-  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (typeof value === 'string') {
+    if (value.includes('|')) {
+      const parts = value
+        .split('|')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (parts.length >= 2) {
+        return lang === 'en' ? parts[1] : parts[0];
+      }
+    }
+    return value;
+  }
+  if (typeof value === 'number') return String(value);
   if (typeof value === 'object' && !Array.isArray(value)) {
     return value[lang] || value.fa || value.en || '';
   }
   return String(value);
+}
+
+export function toLocalizedPair(value, fallbackFa = '', fallbackEn = '') {
+  if (!value) {
+    return { fa: fallbackFa, en: fallbackEn || fallbackFa };
+  }
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    return {
+      fa: value.fa || value.en || fallbackFa,
+      en: value.en || value.fa || fallbackEn || fallbackFa,
+    };
+  }
+  const str = String(value).trim();
+  if (str.includes('|')) {
+    const [faPart, enPart] = str.split('|').map((s) => s.trim());
+    return {
+      fa: faPart || enPart || fallbackFa,
+      en: enPart || faPart || fallbackEn,
+    };
+  }
+  return { fa: str, en: str };
+}
+
+export function formatAvailabilityDays(days, lang = 'fa') {
+  if (!days) return '';
+  if (Array.isArray(days)) {
+    const mapped = days.map((d) => DAY_LABELS[d]?.[lang] || d);
+    return lang === 'fa' ? mapped.join('، ') : mapped.join(', ');
+  }
+  return loc(days, lang);
 }
 
 export function formatPrice(adOrAmount, lang = 'fa') {
@@ -65,6 +117,8 @@ export function formatRelativeTime(isoDate, lang = 'fa') {
   return lang === 'fa' ? `${toPersianDigits(months)} ماه پیش` : `${months}mo ago`;
 }
 
+export const formatRelativeDate = formatRelativeTime;
+
 export function formatTimeClock(isoDate, lang = 'fa') {
   if (!isoDate) return '';
   const d = new Date(isoDate);
@@ -73,5 +127,3 @@ export function formatTimeClock(isoDate, lang = 'fa') {
   const clock = `${hh}:${mm}`;
   return lang === 'fa' ? toPersianDigits(clock) : clock;
 }
-
-export const formatRelativeDate = formatRelativeTime;

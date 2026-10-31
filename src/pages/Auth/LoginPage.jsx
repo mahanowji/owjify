@@ -1,7 +1,17 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Grid, Stack } from '@mui/material';
-import { Eye, EyeOff, LogIn, Briefcase, UserCheck, Headset, ShieldCheck } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  LogIn,
+  Briefcase,
+  UserCheck,
+  Headset,
+  ShieldCheck,
+  ArrowRight,
+  ArrowLeft,
+} from 'lucide-react';
 import PageTransition from '../../components/common/PageTransition';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
@@ -9,8 +19,8 @@ import { useToast } from '../../context/ToastContext';
 import styles from './AuthPages.module.scss';
 
 export default function LoginPage() {
-  const { lang } = useLanguage();
-  const { login } = useAuth();
+  const { lang, isRTL, l } = useLanguage();
+  const { user, hasToken, login } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -22,10 +32,36 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const DirArrow = isRTL ? ArrowLeft : ArrowRight;
+
   const resolveDestination = (loggedUser) => {
-    if (location.state?.from) return location.state.from;
-    if (loggedUser?.accountType === 'admin') return '/admin';
-    if (loggedUser?.accountType === 'operator') return '/operator';
+    const role = loggedUser?.accountType;
+    const from = location.state?.from || '';
+
+    if (role === 'admin') {
+      return from.startsWith('/admin') ? from : '/admin';
+    }
+    if (role === 'operator') {
+      return from.startsWith('/operator') ? from : '/operator';
+    }
+    if (role === 'customer') {
+      if (
+        !from ||
+        from.startsWith('/admin') ||
+        from.startsWith('/operator') ||
+        from.startsWith('/create-ad') ||
+        from.startsWith('/edit-ad')
+      ) {
+        return '/dashboard';
+      }
+      return from;
+    }
+    if (role === 'professional') {
+      if (!from || from.startsWith('/admin') || from.startsWith('/operator')) {
+        return '/dashboard';
+      }
+      return from;
+    }
     return '/dashboard';
   };
 
@@ -55,7 +91,7 @@ export default function LoginPage() {
       const res = await login({ email, password, rememberMe });
       showToast({
         title: lang === 'fa' ? 'خوش آمدید!' : 'Welcome back!',
-        message: res.user.fullName,
+        message: l(res.user.fullName),
         type: 'success',
       });
       navigate(resolveDestination(res.user), { replace: true });
@@ -82,7 +118,7 @@ export default function LoginPage() {
       });
       showToast({
         title: lang === 'fa' ? 'ورود سریع انجام شد' : 'Signed in',
-        message: res.user.fullName,
+        message: l(res.user.fullName),
         type: 'success',
       });
       navigate(resolveDestination(res.user), { replace: true });
@@ -92,6 +128,13 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  const activeWorkspaceUrl =
+    user?.accountType === 'admin'
+      ? '/admin'
+      : user?.accountType === 'operator'
+      ? '/operator'
+      : '/dashboard';
 
   return (
     <PageTransition>
@@ -104,6 +147,34 @@ export default function LoginPage() {
             ? 'با ورود به حساب، به پیام‌ها، علاقه‌مندی‌ها و پنل اختصاصی نقش خود دسترسی خواهید داشت.'
             : 'Sign in to access messaging, saved favorites, and your role-specific workspace.'}
         </p>
+
+        {hasToken && user && (
+          <div
+            style={{
+              padding: '0.8rem 0.95rem',
+              borderRadius: '14px',
+              background: '#11120F',
+              color: '#F6F5F0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.75rem',
+              flexWrap: 'wrap',
+              marginBottom: '1rem',
+              fontSize: '0.8rem',
+            }}
+          >
+            <span>
+              {lang === 'fa'
+                ? `شما هم‌اکنون با حساب «${l(user.fullName)}» وارد شده‌اید.`
+                : `Signed in as ${l(user.fullName)}.`}
+            </span>
+            <Link to={activeWorkspaceUrl} className="owj-btn owj-btn--lime owj-btn--sm">
+              <span>{lang === 'fa' ? 'رفتن به میز کار' : 'Go to Workspace'}</span>
+              <DirArrow size={13} />
+            </Link>
+          </div>
+        )}
 
         {/* Demo Quick Login Cards (4 Roles: Specialist, Client, Support Operator, Admin Mahan Owji) */}
         <div
@@ -161,7 +232,7 @@ export default function LoginPage() {
                 style={{ width: '100%', background: '#FFFFFF' }}
               >
                 <Headset size={14} />
-                <span>{lang === 'fa' ? 'اپراتور پشتیبانی (API)' : 'Support Operator'}</span>
+                <span>{lang === 'fa' ? 'اپراتور پشتیبانی' : 'Support Operator'}</span>
               </button>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -249,16 +320,12 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className={styles.devBox}>
-          {lang === 'fa'
-            ? 'ساختار احراز هویت و تیکتینگ آماده اتصال مستقیم به API بک‌اند (VITE_API_BASE_URL) است و در حالت پیش‌نمایش با شبیه‌سازی محلی اجرا می‌شود.'
-            : 'Service layer is REST API-ready (VITE_API_BASE_URL) with automatic local simulation fallback.'}
-        </div>
-
-        <p className={styles.footerNote}>
+        <div className={styles.footerNote}>
           {lang === 'fa' ? 'حساب کاربری ندارید؟ ' : "Don't have an account? "}
-          <Link to="/auth/signup">{lang === 'fa' ? 'عضویت رایگان' : 'Create Account'}</Link>
-        </p>
+          <Link to="/auth/signup">
+            {lang === 'fa' ? 'عضویت سریع در اوجیفای' : 'Create free account'}
+          </Link>
+        </div>
       </div>
     </PageTransition>
   );

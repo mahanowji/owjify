@@ -56,10 +56,10 @@ export default function AppRoutes() {
         <Route path="/professionals/:id" element={<ProfessionalProfilePage />} />
         <Route path="/support" element={<SupportPage />} />
 
-        {/* Operator Support Console (Includes built-in API Login Gate + Operator Desk) */}
+        {/* Operator Support Console (Includes API Login Gate for Guests + Operator/Admin Desk; redirects Customer/Professional) */}
         <Route path="/operator" element={<OperatorDashboardPage />} />
 
-        {/* Software Admin & Full Website CRM Dashboard (Mahan Owji) */}
+        {/* Software Admin & Full Website Management Dashboard */}
         <Route
           path="/admin"
           element={
@@ -87,11 +87,11 @@ export default function AppRoutes() {
           }
         />
 
-        {/* Authenticated User & Provider Routes */}
+        {/* Customer & Provider Workspace Routes (Admin -> /admin, Operator -> /operator) */}
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requireRole={['customer', 'professional']}>
               <DashboardPage />
             </ProtectedRoute>
           }
@@ -99,7 +99,7 @@ export default function AppRoutes() {
         <Route
           path="/messages"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requireRole={['customer', 'professional']}>
               <MessagesPage />
             </ProtectedRoute>
           }
@@ -107,7 +107,7 @@ export default function AppRoutes() {
         <Route
           path="/notifications"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requireRole={['customer', 'professional']}>
               <NotificationsPage />
             </ProtectedRoute>
           }
@@ -115,7 +115,7 @@ export default function AppRoutes() {
         <Route
           path="/favorites"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requireRole={['customer', 'professional']}>
               <FavoritesPage />
             </ProtectedRoute>
           }
@@ -123,11 +123,13 @@ export default function AppRoutes() {
         <Route
           path="/saved"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requireRole={['customer', 'professional']}>
               <FavoritesPage />
             </ProtectedRoute>
           }
         />
+
+        {/* Shared Authenticated Account Routes */}
         <Route
           path="/settings"
           element={

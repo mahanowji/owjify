@@ -15,7 +15,6 @@ import {
   Divider,
 } from '@mui/material';
 import {
-  ShieldCheck,
   Users,
   Briefcase,
   MessageSquare,
@@ -32,28 +31,42 @@ import {
   Trash2,
   Save,
   ExternalLink,
+  Plus,
+  Layers,
+  CheckCircle2,
+  Send,
+  Sparkles,
 } from 'lucide-react';
 import PageTransition from '../../components/common/PageTransition';
-import { CATEGORIES, getCategoryById } from '../../data/categories';
+import CategoryIcon from '../../components/common/CategoryIcon';
+import { getCategoryById } from '../../data/categories';
 import { getLocationById } from '../../data/locations';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useToast } from '../../context/ToastContext';
-import { formatNumber, formatPrice } from '../../utils/formatters';
+import { formatNumber, formatPrice, formatRelativeDate } from '../../utils/formatters';
 
 export default function AdminDashboardPage() {
   const { lang, l } = useLanguage();
   const { user, allUsers, adminUpdateUser } = useAuth();
   const {
+    categories,
     advertisements,
     professionals,
     reviews,
     allConversations,
     supportTickets,
+    escalatedTicketsCount,
+    addCategory,
+    updateCategory,
+    toggleCategoryActive,
     updateAd,
     deleteAd,
+    deleteReview,
     adminUpdateSpecialist,
+    replySupportTicket,
+    updateSupportTicketStatus,
   } = useMarketplace();
   const { showToast } = useToast();
 
@@ -66,8 +79,25 @@ export default function AdminDashboardPage() {
   const [noteDraft, setNoteDraft] = useState('');
   const [stageDraft, setStageDraft] = useState('Active');
 
-  // Listings Moderation Search
+  // Listings Moderation State
   const [adSearch, setAdSearch] = useState('');
+  const [adStatusFilter, setAdStatusFilter] = useState('all');
+
+  // Category Management State
+  const [newCatFa, setNewCatFa] = useState('');
+  const [newCatEn, setNewCatEn] = useState('');
+  const [newTagFa, setNewTagFa] = useState('');
+  const [newTagEn, setNewTagEn] = useState('');
+  const [newCatIcon, setNewCatIcon] = useState('Sparkles');
+  const [editingCatId, setEditingCatId] = useState(null);
+  const [editCatFa, setEditCatFa] = useState('');
+  const [editCatEn, setEditCatEn] = useState('');
+
+  // Reviews Moderation State
+  const [reviewSearch, setReviewSearch] = useState('');
+
+  // Support Admin Reply State
+  const [adminReplyDrafts, setAdminReplyDrafts] = useState({});
 
   // Build Unified CRM Directory (Registered Users + Marketplace Specialists)
   const crmDirectory = useMemo(() => {
@@ -86,7 +116,9 @@ export default function AdminDashboardPage() {
         locationId: u.locationId || 'tehran',
         crmStage: u.crmStage || 'Active',
         crmNotes: u.crmNotes || '',
-        verified: u.emailVerified,
+        verified: u.proId
+          ? Boolean(professionals.find((p) => p.id === u.proId)?.verified)
+          : Boolean(u.emailVerified),
         adsCount: u.proId ? advertisements.filter((a) => a.proId === u.proId).length : 0,
         messagesCount: allConversations.filter(
           (c) => c.initiatorUserId === u.id || c.recipientProId === u.proId
@@ -156,7 +188,7 @@ export default function AdminDashboardPage() {
     }
     showToast({
       title: lang === 'fa' ? 'پرونده CRM بروزرسانی شد' : 'CRM Record Saved',
-      message: selectedContact.name.split('|')[0].trim(),
+      message: l(selectedContact.name),
       type: 'success',
     });
   };
@@ -182,26 +214,27 @@ export default function AdminDashboardPage() {
   );
 
   const avgRating = useMemo(() => {
-    if (!advertisements.length) return '4.9';
+    if (!reviews.length) return '4.95';
     const avg =
-      advertisements.reduce((sum, a) => sum + Number(a.rating || 4.9), 0) /
-      advertisements.length;
+      reviews.reduce((sum, r) => sum + Number(r.rating || 5), 0) / reviews.length;
     return avg.toFixed(2);
-  }, [advertisements]);
+  }, [reviews]);
 
   const categoryBreakdown = useMemo(() => {
-    return CATEGORIES.map((cat) => {
-      const catAds = advertisements.filter((a) => a.categoryId === cat.id);
-      const views = catAds.reduce((s, a) => s + (a.views || 0), 0);
-      return {
-        id: cat.id,
-        name: l(cat.name),
-        count: catAds.length,
-        views,
-        pct: Math.min(100, Math.round((views / Math.max(1, totalViews)) * 100 * 2.2)),
-      };
-    }).sort((a, b) => b.views - a.views);
-  }, [advertisements, totalViews, l]);
+    return categories
+      .map((cat) => {
+        const catAds = advertisements.filter((a) => a.categoryId === cat.id);
+        const views = catAds.reduce((s, a) => s + (a.views || 0), 0);
+        return {
+          id: cat.id,
+          name: l(cat.name),
+          count: catAds.length,
+          views,
+          pct: Math.min(100, Math.round((views / Math.max(1, totalViews)) * 100 * 2.2)),
+        };
+      })
+      .sort((a, b) => b.views - a.views);
+  }, [categories, advertisements, totalViews, l]);
 
   // 6-Month Platform Growth Data
   const monthlyGrowth = [
@@ -215,11 +248,88 @@ export default function AdminDashboardPage() {
 
   const filteredAds = useMemo(() => {
     const q = adSearch.trim().toLowerCase();
-    if (!q) return advertisements;
-    return advertisements.filter((a) =>
-      `${a.title?.fa || ''} ${a.title?.en || ''}`.toLowerCase().includes(q)
+    return advertisements.filter((a) => {
+      if (adStatusFilter === 'active' && a.status === 'paused') return false;
+      if (adStatusFilter === 'paused' && a.status !== 'paused') return false;
+      if (adStatusFilter === 'featured' && !a.featured) return false;
+      if (!q) return true;
+      return `${a.title?.fa || ''} ${a.title?.en || ''}`.toLowerCase().includes(q);
+    });
+  }, [advertisements, adSearch, adStatusFilter]);
+
+  const filteredReviews = useMemo(() => {
+    const q = reviewSearch.trim().toLowerCase();
+    if (!q) return reviews;
+    return reviews.filter((r) =>
+      `${r.author?.fa || ''} ${r.author?.en || ''} ${r.comment?.fa || ''} ${
+        r.comment?.en || ''
+      }`
+        .toLowerCase()
+        .includes(q)
     );
-  }, [advertisements, adSearch]);
+  }, [reviews, reviewSearch]);
+
+  const sortedSupportTickets = useMemo(() => {
+    return [...supportTickets].sort((a, b) => {
+      if (a.status === 'escalated' && b.status !== 'escalated') return -1;
+      if (b.status === 'escalated' && a.status !== 'escalated') return 1;
+      return new Date(b.updatedAt) - new Date(a.updatedAt);
+    });
+  }, [supportTickets]);
+
+  const handleAddCategorySubmit = (e) => {
+    e.preventDefault();
+    if (!newCatFa.trim() && !newCatEn.trim()) return;
+    addCategory({
+      nameFa: newCatFa,
+      nameEn: newCatEn,
+      taglineFa: newTagFa,
+      taglineEn: newTagEn,
+      icon: newCatIcon,
+    });
+    setNewCatFa('');
+    setNewCatEn('');
+    setNewTagFa('');
+    setNewTagEn('');
+    showToast({
+      title: lang === 'fa' ? 'دسته‌بندی جدید اضافه شد' : 'New Category Created',
+      type: 'success',
+    });
+  };
+
+  const handleSaveCategoryEdit = (catId) => {
+    updateCategory(catId, {
+      name: {
+        fa: editCatFa.trim() || 'دسته‌بندی',
+        en: editCatEn.trim() || 'Category',
+      },
+    });
+    setEditingCatId(null);
+    showToast({
+      title: lang === 'fa' ? 'دسته‌بندی ویرایش شد' : 'Category Updated',
+      type: 'success',
+    });
+  };
+
+  const handleAdminTicketReply = async (ticketId, resolveNow = false) => {
+    const txt = (adminReplyDrafts[ticketId] || '').trim();
+    if (!txt) return;
+    await replySupportTicket({
+      ticketId,
+      replyText: txt,
+      authorName: user?.fullName || 'ماهان اوجی | Mahan Owji',
+      authorRole: 'admin',
+      nextStatus: resolveNow ? 'resolved' : 'answered',
+    });
+    setAdminReplyDrafts((prev) => ({ ...prev, [ticketId]: '' }));
+    showToast({
+      title:
+        lang === 'fa'
+          ? `پاسخ مدیریت برای ${ticketId} ثبت شد`
+          : `Admin Response Sent (${ticketId})`,
+      type: 'success',
+    });
+  };
 
   return (
     <PageTransition>
@@ -267,14 +377,14 @@ export default function AdminDashboardPage() {
                 </Stack>
                 <Typography variant="h5" sx={{ fontWeight: 800 }}>
                   {lang === 'fa'
-                    ? 'مرکز فرماندهی و CRM اوجیفای — ماهان اوجی'
+                    ? 'مرکز فرماندهی و مدیریت کل اوجیفای — ماهان اوجی'
                     : 'OWJIFY Executive Admin & CRM — Mahan Owji'}
                 </Typography>
                 <Typography sx={{ fontSize: '0.82rem', color: 'rgba(246,245,240,0.72)' }}>
                   mahanowji1380@gmail.com •{' '}
                   {lang === 'fa'
-                    ? 'پایش زنده آمار، کاربران، متخصصان، آگهی‌ها و گزارش‌ها'
-                    : 'Live Platform Statistics, User CRM, Listings & Support Oversight'}
+                    ? 'مدیریت کاربران، احراز هویت متخصصان، آگهی‌ها، دسته‌بندی‌ها، دیدگاه‌ها و پشتیبانی'
+                    : 'Users, Verification, Listings, Categories, Reviews & Support Oversight'}
                 </Typography>
               </Box>
             </Stack>
@@ -294,6 +404,41 @@ export default function AdminDashboardPage() {
           </Stack>
         </Paper>
 
+        {/* Escalation Alert Banner if Support Operators escalated tickets */}
+        {escalatedTicketsCount > 0 && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 1.8,
+              mb: 2.5,
+              borderRadius: 3,
+              bgcolor: 'rgba(217,72,72,0.1)',
+              border: '1px solid rgba(217,72,72,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 1.5,
+            }}
+          >
+            <Stack direction="row" spacing={1} alignItems="center">
+              <AlertTriangle size={18} color="#b83232" />
+              <Typography sx={{ fontSize: '0.86rem', fontWeight: 800, color: '#8f2222' }}>
+                {lang === 'fa'
+                  ? `${formatNumber(escalatedTicketsCount, lang)} پرونده فوری توسط اپراتور پشتیبانی به مدیریت ارشد ارجاع شده است.`
+                  : `${escalatedTicketsCount} ticket(s) escalated by Support Operators require Admin action.`}
+              </Typography>
+            </Stack>
+            <button
+              type="button"
+              onClick={() => setTab(5)}
+              className="owj-btn owj-btn--danger owj-btn--sm"
+            >
+              {lang === 'fa' ? 'بررسی ارجاع‌ها' : 'Inspect Escalations'}
+            </button>
+          </Paper>
+        )}
+
         {/* Top 6 Executive KPIs */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           {[
@@ -305,21 +450,24 @@ export default function AdminDashboardPage() {
             },
             {
               icon: Briefcase,
-              label: lang === 'fa' ? 'آگهی‌های خدمات فعال' : 'Marketplace Listings',
+              label: lang === 'fa' ? 'آگهی‌های خدمات ثبت‌شده' : 'Marketplace Listings',
               value: formatNumber(advertisements.length, lang),
               sub: `${formatNumber(totalViews, lang)} ${lang === 'fa' ? 'بازدید کل' : 'total views'}`,
             },
             {
-              icon: MessageSquare,
-              label: lang === 'fa' ? 'ارتباطات مستقیم شکل‌گرفته' : 'Direct Connections',
-              value: formatNumber(allConversations.length * 48 + 540, lang),
-              sub: lang === 'fa' ? 'پیوند مستقیم انسان‌ها' : 'People connected',
+              icon: Layers,
+              label: lang === 'fa' ? 'دسته‌بندی‌های فعال' : 'Active Categories',
+              value: formatNumber(
+                categories.filter((c) => c.active !== false).length,
+                lang
+              ),
+              sub: `${formatNumber(categories.length, lang)} ${lang === 'fa' ? 'کل دسته‌ها' : 'total'}`,
             },
             {
               icon: Star,
               label: lang === 'fa' ? 'میانگین رضایت کل سایت' : 'Platform CSAT Rating',
               value: `${avgRating} ★`,
-              sub: `${formatNumber(reviews.length, lang)} ${lang === 'fa' ? 'دیدگاه ثبت‌شده' : 'verified reviews'}`,
+              sub: `${formatNumber(reviews.length, lang)} ${lang === 'fa' ? 'دیدگاه فعال' : 'reviews'}`,
             },
             {
               icon: AlertTriangle,
@@ -332,9 +480,9 @@ export default function AdminDashboardPage() {
             },
             {
               icon: TrendingUp,
-              label: lang === 'fa' ? 'نرخ پاسخ‌گویی متخصصان' : 'Specialist Response Rate',
-              value: lang === 'fa' ? '۹۶.۴٪' : '96.4%',
-              sub: lang === 'fa' ? 'میانگین زیر ۲۵ دقیقه' : 'Avg under 25 mins',
+              label: lang === 'fa' ? 'ارتباطات مستقیم شکل‌گرفته' : 'Direct Connections',
+              value: formatNumber(allConversations.length * 48 + 540, lang),
+              sub: lang === 'fa' ? 'نرخ پاسخ‌گویی ۹۶.۴٪' : '96.4% response rate',
             },
           ].map((kpi, idx) => {
             const IconComp = kpi.icon;
@@ -384,7 +532,7 @@ export default function AdminDashboardPage() {
           })}
         </Grid>
 
-        {/* Admin Module Tabs */}
+        {/* 6 Dedicated Admin Management Tabs */}
         <Box sx={{ borderBottom: '1px solid rgba(17,18,15,0.1)', mb: 3 }}>
           <Tabs
             value={tab}
@@ -392,37 +540,45 @@ export default function AdminDashboardPage() {
             variant="scrollable"
             scrollButtons="auto"
             sx={{
-              '& .MuiTab-root': { fontWeight: 800, fontSize: '0.86rem', minHeight: 46 },
+              '& .MuiTab-root': { fontWeight: 800, fontSize: '0.84rem', minHeight: 46 },
               '& .Mui-selected': { color: '#11120F !important' },
               '& .MuiTabs-indicator': { bgcolor: '#11120F', height: 3 },
             }}
           >
+            <Tab label={lang === 'fa' ? 'آمار کلان و رشد' : 'Analytics & Overview'} />
             <Tab
               label={
                 lang === 'fa'
-                  ? 'آمار کلان و نمودار رشد پلتفرم'
-                  : 'Analytics & Growth Charts'
+                  ? `کاربران و احراز هویت (${formatNumber(crmDirectory.length, lang)})`
+                  : `Users & Verification (${crmDirectory.length})`
               }
             />
             <Tab
               label={
                 lang === 'fa'
-                  ? `CRM جامع کاربران و متخصصان (${formatNumber(crmDirectory.length, lang)})`
-                  : `Full Website CRM (${crmDirectory.length})`
+                  ? `نظارت آگهی‌ها (${formatNumber(advertisements.length, lang)})`
+                  : `Listings Moderation (${advertisements.length})`
               }
             />
             <Tab
               label={
                 lang === 'fa'
-                  ? `مدیریت کل آگهی‌ها (${formatNumber(advertisements.length, lang)})`
-                  : `All Listings (${advertisements.length})`
+                  ? `مدیریت دسته‌بندی‌ها (${formatNumber(categories.length, lang)})`
+                  : `Categories (${categories.length})`
               }
             />
             <Tab
               label={
                 lang === 'fa'
-                  ? `گزارش‌ها و تیکت‌های پشتیبانی (${formatNumber(supportTickets.length, lang)})`
-                  : `Support Reports (${supportTickets.length})`
+                  ? `دیدگاه‌ها و گزارش‌ها (${formatNumber(reviews.length, lang)})`
+                  : `Reviews & Reports (${reviews.length})`
+              }
+            />
+            <Tab
+              label={
+                lang === 'fa'
+                  ? `مدیریت پشتیبانی (${formatNumber(supportTickets.length, lang)})`
+                  : `Support & Escalations (${supportTickets.length})`
               }
             />
           </Tabs>
@@ -431,7 +587,6 @@ export default function AdminDashboardPage() {
         {/* TAB 0: ANALYTICS & VISUAL CHARTS */}
         {tab === 0 && (
           <Grid container spacing={2.5}>
-            {/* 6-Month Growth Visual Bar Chart */}
             <Grid size={{ xs: 12, lg: 7 }}>
               <Paper
                 elevation={0}
@@ -442,25 +597,16 @@ export default function AdminDashboardPage() {
                   height: '100%',
                 }}
               >
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  sx={{ mb: 2.5 }}
-                >
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.02rem' }}>
-                      {lang === 'fa'
-                        ? 'روند ۶ ماهه پیوند مستقیم کاربران و رشد اعضا'
-                        : '6-Month Direct Connections & User Growth'}
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.78rem', color: '#666860' }}>
-                      {lang === 'fa'
-                        ? 'ستون لیمویی: ارتباطات موفق شکل‌گرفته • ستون تیره: اعضای جدید'
-                        : 'Lime: People Connected • Charcoal: New Registered Members'}
-                    </Typography>
-                  </Box>
-                </Stack>
+                <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.02rem' }}>
+                  {lang === 'fa'
+                    ? 'روند ۶ ماهه پیوند مستقیم کاربران و رشد اعضا'
+                    : '6-Month Direct Connections & User Growth'}
+                </Typography>
+                <Typography sx={{ fontSize: '0.78rem', color: '#666860', mb: 2.5 }}>
+                  {lang === 'fa'
+                    ? 'ستون لیمویی: ارتباطات موفق شکل‌گرفته • ستون تیره: اعضای جدید'
+                    : 'Lime: People Connected • Charcoal: New Registered Members'}
+                </Typography>
 
                 <Box
                   sx={{
@@ -528,7 +674,6 @@ export default function AdminDashboardPage() {
               </Paper>
             </Grid>
 
-            {/* Category Demand Distribution */}
             <Grid size={{ xs: 12, lg: 5 }}>
               <Paper
                 elevation={0}
@@ -581,10 +726,9 @@ export default function AdminDashboardPage() {
           </Grid>
         )}
 
-        {/* TAB 1: FULL WEBSITE CRM */}
+        {/* TAB 1: USERS, SPECIALISTS CRM & VERIFICATION */}
         {tab === 1 && (
           <Grid container spacing={2.5}>
-            {/* CRM Contact Table/List */}
             <Grid size={{ xs: 12, lg: 7.5 }}>
               <Paper
                 elevation={0}
@@ -618,8 +762,8 @@ export default function AdminDashboardPage() {
                       onChange={(e) => setCrmSearch(e.target.value)}
                       placeholder={
                         lang === 'fa'
-                          ? 'جستجو در کل CRM (نام، ایمیل، نقش، برچسب)...'
-                          : 'Search CRM contacts (name, email, role, stage)...'
+                          ? 'جستجو در کاربران و متخصصان (نام، ایمیل، نقش)...'
+                          : 'Search users & specialists (name, email, role)...'
                       }
                       style={{
                         flex: 1,
@@ -674,11 +818,11 @@ export default function AdminDashboardPage() {
                         }}
                       >
                         <Stack direction="row" spacing={1.2} alignItems="center">
-                          <Avatar src={c.avatar} alt={c.name} sx={{ width: 40, height: 40 }} />
+                          <Avatar src={c.avatar} alt={l(c.name)} sx={{ width: 40, height: 40 }} />
                           <Box>
                             <Stack direction="row" spacing={0.6} alignItems="center">
                               <Typography sx={{ fontWeight: 800, fontSize: '0.88rem' }}>
-                                {c.name.split('|')[0].trim()}
+                                {l(c.name)}
                               </Typography>
                               {c.verified && <BadgeCheck size={14} color="#289e67" />}
                             </Stack>
@@ -735,7 +879,6 @@ export default function AdminDashboardPage() {
               </Paper>
             </Grid>
 
-            {/* Right CRM Profile Inspector & Notes Editor */}
             <Grid size={{ xs: 12, lg: 4.5 }}>
               {selectedContact && (
                 <Paper
@@ -749,12 +892,12 @@ export default function AdminDashboardPage() {
                   <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
                     <Avatar
                       src={selectedContact.avatar}
-                      alt={selectedContact.name}
+                      alt={l(selectedContact.name)}
                       sx={{ width: 54, height: 54 }}
                     />
                     <Box>
                       <Typography sx={{ fontWeight: 800, fontSize: '1rem' }}>
-                        {selectedContact.name}
+                        {l(selectedContact.name)}
                       </Typography>
                       <Typography sx={{ fontSize: '0.78rem', color: '#666860' }} dir="ltr">
                         {selectedContact.email}
@@ -829,7 +972,6 @@ export default function AdminDashboardPage() {
 
                   <Divider sx={{ my: 1.6 }} />
 
-                  {/* CRM Stage & Notes */}
                   <Box sx={{ mb: 1.4 }}>
                     <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, marginBottom: 5 }}>
                       {lang === 'fa' ? 'برچسب وضعیت CRM' : 'CRM Lifecycle Stage'}
@@ -900,17 +1042,32 @@ export default function AdminDashboardPage() {
             sx={{ p: 2.5, borderRadius: 4, border: '1px solid rgba(17,18,15,0.08)' }}
           >
             <Stack
-              direction={{ xs: 'column', sm: 'row' }}
+              direction={{ xs: 'column', md: 'row' }}
               justifyContent="space-between"
-              alignItems={{ xs: 'stretch', sm: 'center' }}
+              alignItems={{ xs: 'stretch', md: 'center' }}
               spacing={1.5}
               sx={{ mb: 2 }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.02rem' }}>
-                {lang === 'fa'
-                  ? 'نظارت و مدیریت کلیه آگهی‌های ثبت‌شده در سایت'
-                  : 'Global Marketplace Listings Moderation'}
-              </Typography>
+              <Stack direction="row" spacing={0.6} flexWrap="wrap" useFlexGap>
+                {[
+                  { id: 'all', label: lang === 'fa' ? 'همه آگهی‌ها' : 'All' },
+                  { id: 'active', label: lang === 'fa' ? 'فعال' : 'Active' },
+                  { id: 'paused', label: lang === 'fa' ? 'متوقف' : 'Paused' },
+                  { id: 'featured', label: lang === 'fa' ? 'منتخب' : 'Featured' },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setAdStatusFilter(f.id)}
+                    className={`owj-btn owj-btn--sm ${
+                      adStatusFilter === f.id ? 'owj-btn--dark' : 'owj-btn--ghost'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </Stack>
+
               <Box
                 sx={{
                   display: 'flex',
@@ -920,7 +1077,7 @@ export default function AdminDashboardPage() {
                   py: 0.6,
                   borderRadius: 2.5,
                   bgcolor: '#F6F5F0',
-                  minWidth: 250,
+                  minWidth: { xs: 0, sm: 250 },
                 }}
               >
                 <Search size={15} color="#666860" />
@@ -941,7 +1098,9 @@ export default function AdminDashboardPage() {
 
             <Stack spacing={1.1}>
               {filteredAds.map((ad) => {
-                const cat = getCategoryById(ad.categoryId);
+                const cat =
+                  categories.find((c) => c.id === ad.categoryId) ||
+                  getCategoryById(ad.categoryId);
                 return (
                   <Box
                     key={ad.id}
@@ -979,6 +1138,19 @@ export default function AdminDashboardPage() {
                                 : 'rgba(40,158,103,0.18)',
                           }}
                         />
+                        {ad.featured && (
+                          <Chip
+                            size="small"
+                            label={lang === 'fa' ? 'منتخب' : 'Featured'}
+                            sx={{
+                              height: 20,
+                              fontSize: '0.65rem',
+                              fontWeight: 800,
+                              bgcolor: '#C7F36B',
+                              color: '#11120F',
+                            }}
+                          />
+                        )}
                         <Typography sx={{ fontSize: '0.74rem', color: '#666860' }}>
                           {l(cat.name)} • {formatNumber(ad.views || 0, lang)}{' '}
                           {lang === 'fa' ? 'بازدید' : 'views'}
@@ -992,7 +1164,7 @@ export default function AdminDashboardPage() {
                       </Typography>
                     </Box>
 
-                    <Stack direction="row" spacing={0.7} alignItems="center">
+                    <Stack direction="row" spacing={0.7} alignItems="center" flexWrap="wrap" useFlexGap>
                       <Link
                         to={`/services/${ad.id}`}
                         className="owj-btn owj-btn--outline owj-btn--sm"
@@ -1000,6 +1172,34 @@ export default function AdminDashboardPage() {
                         <Eye size={13} />
                         <span>{lang === 'fa' ? 'مشاهده' : 'View'}</span>
                       </Link>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateAd(ad.id, { featured: !ad.featured });
+                          showToast({
+                            title: !ad.featured
+                              ? lang === 'fa'
+                                ? 'آگهی به منتخب‌ها اضافه شد'
+                                : 'Marked as Featured'
+                              : lang === 'fa'
+                              ? 'نشان منتخب برداشته شد'
+                              : 'Removed from Featured',
+                            type: 'info',
+                          });
+                        }}
+                        className="owj-btn owj-btn--outline owj-btn--sm"
+                      >
+                        <Sparkles size={13} />
+                        <span>
+                          {ad.featured
+                            ? lang === 'fa'
+                              ? 'حذف از منتخب'
+                              : 'Unfeature'
+                            : lang === 'fa'
+                            ? 'منتخب کردن'
+                            : 'Feature'}
+                        </span>
+                      </button>
                       <button
                         type="button"
                         onClick={() =>
@@ -1034,6 +1234,7 @@ export default function AdminDashboardPage() {
                           });
                         }}
                         className="owj-btn owj-btn--danger owj-btn--sm"
+                        aria-label="Delete listing"
                       >
                         <Trash2 size={13} />
                       </button>
@@ -1045,8 +1246,422 @@ export default function AdminDashboardPage() {
           </Paper>
         )}
 
-        {/* TAB 3: SUPPORT REPORTS & TICKET OVERSIGHT */}
+        {/* TAB 3: CATEGORY MANAGEMENT */}
         {tab === 3 && (
+          <Grid container spacing={2.5}>
+            <Grid size={{ xs: 12, lg: 4.5 }}>
+              <Paper
+                elevation={0}
+                component="form"
+                onSubmit={handleAddCategorySubmit}
+                sx={{ p: 2.5, borderRadius: 4, border: '1px solid rgba(17,18,15,0.08)' }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1rem', mb: 1.6 }}>
+                  {lang === 'fa' ? 'افزودن دسته‌بندی جدید' : 'Create New Category'}
+                </Typography>
+
+                <Stack spacing={1.3}>
+                  <Box>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, marginBottom: 4 }}>
+                      {lang === 'fa' ? 'عنوان فارسی' : 'Persian Title'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newCatFa}
+                      onChange={(e) => setNewCatFa(e.target.value)}
+                      placeholder={
+                        lang === 'fa'
+                          ? 'مثلاً: مشاوره حقوقی و قرارداد'
+                          : 'Persian category title...'
+                      }
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(17,18,15,0.15)',
+                        fontSize: '0.84rem',
+                      }}
+                    />
+                  </Box>
+
+                  <Box>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, marginBottom: 4 }}>
+                      {lang === 'fa' ? 'عنوان انگلیسی' : 'English Title'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      dir="ltr"
+                      value={newCatEn}
+                      onChange={(e) => setNewCatEn(e.target.value)}
+                      placeholder="e.g. Legal & Advisory"
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(17,18,15,0.15)',
+                        fontSize: '0.84rem',
+                      }}
+                    />
+                  </Box>
+
+                  <Box>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, marginBottom: 4 }}>
+                      {lang === 'fa' ? 'توضیح کوتاه فارسی' : 'Persian Tagline'}
+                    </label>
+                    <input
+                      type="text"
+                      value={newTagFa}
+                      onChange={(e) => setNewTagFa(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(17,18,15,0.15)',
+                        fontSize: '0.84rem',
+                      }}
+                    />
+                  </Box>
+
+                  <Box>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, marginBottom: 4 }}>
+                      {lang === 'fa' ? 'توضیح کوتاه انگلیسی' : 'English Tagline'}
+                    </label>
+                    <input
+                      type="text"
+                      dir="ltr"
+                      value={newTagEn}
+                      onChange={(e) => setNewTagEn(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(17,18,15,0.15)',
+                        fontSize: '0.84rem',
+                      }}
+                    />
+                  </Box>
+
+                  <Box>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, marginBottom: 4 }}>
+                      {lang === 'fa' ? 'آیکون دسته' : 'Category Icon'}
+                    </label>
+                    <select
+                      value={newCatIcon}
+                      onChange={(e) => setNewCatIcon(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.62rem 0.85rem',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(17,18,15,0.15)',
+                        background: '#FFFFFF',
+                        fontSize: '0.84rem',
+                      }}
+                    >
+                      <option value="Sparkles">Sparkles</option>
+                      <option value="Briefcase">Briefcase</option>
+                      <option value="Code2">Code2</option>
+                      <option value="Building2">Building2</option>
+                      <option value="Wrench">Wrench</option>
+                      <option value="GraduationCap">GraduationCap</option>
+                    </select>
+                  </Box>
+
+                  <button type="submit" className="owj-btn owj-btn--lime owj-btn--sm">
+                    <Plus size={14} />
+                    <span>{lang === 'fa' ? 'ایجاد دسته‌بندی' : 'Add Category'}</span>
+                  </button>
+                </Stack>
+              </Paper>
+            </Grid>
+
+            <Grid size={{ xs: 12, lg: 7.5 }}>
+              <Paper
+                elevation={0}
+                sx={{ p: 2.5, borderRadius: 4, border: '1px solid rgba(17,18,15,0.08)' }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1rem', mb: 1.8 }}>
+                  {lang === 'fa'
+                    ? 'مدیریت دسته‌بندی‌های بازارگاه'
+                    : 'Manage Marketplace Categories'}
+                </Typography>
+
+                <Stack spacing={1.1}>
+                  {categories.map((cat) => {
+                    const isActive = cat.active !== false;
+                    const count = advertisements.filter((a) => a.categoryId === cat.id).length;
+                    const isEditing = editingCatId === cat.id;
+
+                    return (
+                      <Box
+                        key={cat.id}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 3,
+                          bgcolor: '#F6F5F0',
+                          opacity: isActive ? 1 : 0.65,
+                        }}
+                      >
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          flexWrap="wrap"
+                          gap={1.2}
+                        >
+                          <Stack direction="row" spacing={1.2} alignItems="center">
+                            <Box
+                              sx={{
+                                width: 38,
+                                height: 38,
+                                borderRadius: 2.2,
+                                bgcolor: '#FFFFFF',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <CategoryIcon name={cat.icon} size={18} />
+                            </Box>
+                            <Box>
+                              <Stack direction="row" spacing={0.8} alignItems="center">
+                                <Typography sx={{ fontWeight: 800, fontSize: '0.9rem' }}>
+                                  {l(cat.name)}
+                                </Typography>
+                                <Chip
+                                  size="small"
+                                  label={
+                                    isActive
+                                      ? lang === 'fa'
+                                        ? 'فعال'
+                                        : 'Active'
+                                      : lang === 'fa'
+                                      ? 'مخفی'
+                                      : 'Hidden'
+                                  }
+                                  sx={{
+                                    height: 19,
+                                    fontSize: '0.64rem',
+                                    fontWeight: 800,
+                                    bgcolor: isActive
+                                      ? 'rgba(40,158,103,0.18)'
+                                      : 'rgba(17,18,15,0.1)',
+                                  }}
+                                />
+                              </Stack>
+                              <Typography sx={{ fontSize: '0.75rem', color: '#666860' }}>
+                                {formatNumber(count, lang)}{' '}
+                                {lang === 'fa' ? 'آگهی ثبت‌شده' : 'listings'} •{' '}
+                                {formatNumber((cat.subcategories || []).length, lang)}{' '}
+                                {lang === 'fa' ? 'زیردسته' : 'subcategories'}
+                              </Typography>
+                            </Box>
+                          </Stack>
+
+                          <Stack direction="row" spacing={0.7}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingCatId(isEditing ? null : cat.id);
+                                setEditCatFa(cat.name?.fa || '');
+                                setEditCatEn(cat.name?.en || '');
+                              }}
+                              className="owj-btn owj-btn--outline owj-btn--sm"
+                            >
+                              {lang === 'fa' ? 'ویرایش نام' : 'Rename'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                toggleCategoryActive(cat.id);
+                                showToast({
+                                  title: isActive
+                                    ? lang === 'fa'
+                                      ? 'دسته‌بندی مخفی شد'
+                                      : 'Category Hidden'
+                                    : lang === 'fa'
+                                    ? 'دسته‌بندی فعال شد'
+                                    : 'Category Enabled',
+                                  type: 'info',
+                                });
+                              }}
+                              className="owj-btn owj-btn--dark owj-btn--sm"
+                            >
+                              {isActive
+                                ? lang === 'fa'
+                                  ? 'غیرفعال‌سازی'
+                                  : 'Disable'
+                                : lang === 'fa'
+                                ? 'فعال‌سازی'
+                                : 'Enable'}
+                            </button>
+                          </Stack>
+                        </Stack>
+
+                        {isEditing && (
+                          <Stack
+                            direction={{ xs: 'column', sm: 'row' }}
+                            spacing={1}
+                            sx={{ mt: 1.2, pt: 1.2, borderTop: '1px solid rgba(17,18,15,0.08)' }}
+                          >
+                            <input
+                              type="text"
+                              value={editCatFa}
+                              onChange={(e) => setEditCatFa(e.target.value)}
+                              placeholder={lang === 'fa' ? 'نام فارسی' : 'Persian Name'}
+                              style={{
+                                flex: 1,
+                                padding: '0.5rem 0.75rem',
+                                borderRadius: '8px',
+                                border: '1px solid rgba(17,18,15,0.16)',
+                                background: '#FFFFFF',
+                                fontSize: '0.82rem',
+                              }}
+                            />
+                            <input
+                              type="text"
+                              dir="ltr"
+                              value={editCatEn}
+                              onChange={(e) => setEditCatEn(e.target.value)}
+                              placeholder="English Name"
+                              style={{
+                                flex: 1,
+                                padding: '0.5rem 0.75rem',
+                                borderRadius: '8px',
+                                border: '1px solid rgba(17,18,15,0.16)',
+                                background: '#FFFFFF',
+                                fontSize: '0.82rem',
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSaveCategoryEdit(cat.id)}
+                              className="owj-btn owj-btn--lime owj-btn--sm"
+                            >
+                              <Save size={13} />
+                              <span>{lang === 'fa' ? 'ذخیره' : 'Save'}</span>
+                            </button>
+                          </Stack>
+                        )}
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              </Paper>
+            </Grid>
+          </Grid>
+        )}
+
+        {/* TAB 4: REVIEWS & REPORTS MODERATION */}
+        {tab === 4 && (
+          <Paper
+            elevation={0}
+            sx={{ p: 2.5, borderRadius: 4, border: '1px solid rgba(17,18,15,0.08)' }}
+          >
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              justifyContent="space-between"
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+              spacing={1.5}
+              sx={{ mb: 2 }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.02rem' }}>
+                {lang === 'fa'
+                  ? 'نظارت بر دیدگاه‌های کاربران و حذف محتوای نامناسب'
+                  : 'Customer Reviews & Content Moderation'}
+              </Typography>
+
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 1.4,
+                  py: 0.6,
+                  borderRadius: 2.5,
+                  bgcolor: '#F6F5F0',
+                  minWidth: { xs: 0, sm: 250 },
+                }}
+              >
+                <Search size={15} color="#666860" />
+                <input
+                  value={reviewSearch}
+                  onChange={(e) => setReviewSearch(e.target.value)}
+                  placeholder={lang === 'fa' ? 'جستجو در دیدگاه‌ها...' : 'Search reviews...'}
+                  style={{
+                    flex: 1,
+                    border: 'none',
+                    outline: 'none',
+                    background: 'transparent',
+                    fontSize: '0.82rem',
+                  }}
+                />
+              </Box>
+            </Stack>
+
+            <Stack spacing={1.2}>
+              {filteredReviews.map((rev) => {
+                const targetAd = advertisements.find((a) => a.id === rev.adId);
+                return (
+                  <Box
+                    key={rev.id}
+                    sx={{
+                      p: 1.7,
+                      borderRadius: 3,
+                      bgcolor: '#F6F5F0',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: 1.5,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <Box sx={{ flex: 1, minWidth: 220 }}>
+                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.4 }}>
+                        <Typography sx={{ fontWeight: 800, fontSize: '0.88rem' }}>
+                          {l(rev.author || rev.authorName)}
+                        </Typography>
+                        <span style={{ color: '#E59934', fontWeight: 800, fontSize: '0.84rem' }}>
+                          ★ {rev.rating}.0
+                        </span>
+                        {targetAd && (
+                          <Link
+                            to={`/services/${targetAd.id}`}
+                            style={{ fontSize: '0.76rem', color: '#464841', textDecoration: 'underline' }}
+                          >
+                            {l(targetAd.title)}
+                          </Link>
+                        )}
+                      </Stack>
+                      <Typography sx={{ fontSize: '0.86rem', color: '#232620' }}>
+                        {l(rev.comment)}
+                      </Typography>
+                    </Box>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        deleteReview(rev.id);
+                        showToast({
+                          title: lang === 'fa' ? 'دیدگاه حذف شد' : 'Review Removed',
+                          type: 'info',
+                        });
+                      }}
+                      className="owj-btn owj-btn--danger owj-btn--sm"
+                    >
+                      <Trash2 size={13} />
+                      <span>{lang === 'fa' ? 'حذف دیدگاه' : 'Delete'}</span>
+                    </button>
+                  </Box>
+                );
+              })}
+            </Stack>
+          </Paper>
+        )}
+
+        {/* TAB 5: SUPPORT & ESCALATIONS MANAGEMENT */}
+        {tab === 5 && (
           <Paper
             elevation={0}
             sx={{ p: 2.5, borderRadius: 4, border: '1px solid rgba(17,18,15,0.08)' }}
@@ -1061,56 +1676,145 @@ export default function AdminDashboardPage() {
             >
               <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.02rem' }}>
                 {lang === 'fa'
-                  ? 'نمای مدیریتی گزارش‌های کاربران و عملکرد اپراتورها'
-                  : 'Platform Reports & Support SLA Monitor'}
+                  ? 'مدیریت تیکت‌ها، پرونده‌های ارجاع‌شده و پاسخ مستقیم ادمین'
+                  : 'Support Oversight & Escalated Tickets'}
               </Typography>
               <Link to="/operator" className="owj-btn owj-btn--dark owj-btn--sm">
                 <Headset size={14} color="#C7F36B" />
                 <span>
-                  {lang === 'fa' ? 'ورود به میز پاسخ‌گویی اپراتور' : 'Open Operator Desk'}
+                  {lang === 'fa' ? 'کنسول کامل اپراتور' : 'Full Operator Console'}
                 </span>
               </Link>
             </Stack>
 
-            <Stack spacing={1.2}>
-              {supportTickets.map((t) => (
-                <Box
-                  key={t.id}
-                  sx={{
-                    p: 1.8,
-                    borderRadius: 3,
-                    bgcolor: '#F6F5F0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: 1.5,
-                  }}
-                >
-                  <Box>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.4 }}>
-                      <Chip
-                        size="small"
-                        label={t.id}
-                        sx={{ bgcolor: '#11120F', color: '#C7F36B', fontWeight: 800 }}
-                      />
-                      <Chip size="small" label={t.status.toUpperCase()} sx={{ fontWeight: 700 }} />
-                      <Typography sx={{ fontSize: '0.76rem', color: '#666860' }}>
-                        {t.reporterName} ({t.reporterEmail})
-                      </Typography>
+            <Stack spacing={1.5}>
+              {sortedSupportTickets.map((t) => {
+                const isEscalated = t.status === 'escalated';
+                return (
+                  <Box
+                    key={t.id}
+                    sx={{
+                      p: 2,
+                      borderRadius: 3.5,
+                      bgcolor: isEscalated ? 'rgba(217,72,72,0.07)' : '#F6F5F0',
+                      border: isEscalated
+                        ? '1.5px solid rgba(217,72,72,0.35)'
+                        : '1px solid rgba(17,18,15,0.06)',
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      flexWrap="wrap"
+                      gap={1}
+                      sx={{ mb: 0.8 }}
+                    >
+                      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                        <Chip
+                          size="small"
+                          label={t.id}
+                          sx={{ bgcolor: '#11120F', color: '#C7F36B', fontWeight: 800 }}
+                        />
+                        <Chip
+                          size="small"
+                          label={t.status.toUpperCase()}
+                          sx={{
+                            fontWeight: 800,
+                            bgcolor: isEscalated
+                              ? 'rgba(217,72,72,0.18)'
+                              : 'rgba(17,18,15,0.08)',
+                            color: isEscalated ? '#b83232' : '#11120F',
+                          }}
+                        />
+                        <Typography sx={{ fontSize: '0.76rem', color: '#666860' }}>
+                          {l(t.reporterName)} ({t.reporterEmail || 'N/A'}) •{' '}
+                          {formatRelativeDate(t.updatedAt, lang)}
+                        </Typography>
+                      </Stack>
+
+                      <Stack direction="row" spacing={0.7}>
+                        {t.relatedAdId && (
+                          <Link
+                            to={`/services/${t.relatedAdId}`}
+                            className="owj-btn owj-btn--outline owj-btn--sm"
+                          >
+                            <ExternalLink size={13} />
+                            <span>{lang === 'fa' ? 'آگهی مرتبط' : 'Reported Ad'}</span>
+                          </Link>
+                        )}
+                        {t.status !== 'resolved' && (
+                          <button
+                            type="button"
+                            onClick={() => updateSupportTicketStatus(t.id, 'resolved')}
+                            className="owj-btn owj-btn--dark owj-btn--sm"
+                          >
+                            <CheckCircle2 size={13} color="#C7F36B" />
+                            <span>{lang === 'fa' ? 'بستن پرونده' : 'Resolve'}</span>
+                          </button>
+                        )}
+                      </Stack>
                     </Stack>
-                    <Typography sx={{ fontWeight: 800, fontSize: '0.92rem' }}>
+
+                    <Typography sx={{ fontWeight: 800, fontSize: '0.94rem', mb: 0.6 }}>
                       {l(t.subject)}
                     </Typography>
+
+                    {t.escalationReason && (
+                      <Typography
+                        sx={{
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          color: '#b83232',
+                          mb: 1,
+                        }}
+                      >
+                        {lang === 'fa' ? 'علت ارجاع اپراتور: ' : 'Escalation Note: '}
+                        {l(t.escalationReason)}
+                      </Typography>
+                    )}
+
+                    {/* Inline Admin Reply */}
+                    {t.status !== 'resolved' && (
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 1 }}>
+                        <input
+                          type="text"
+                          value={adminReplyDrafts[t.id] || ''}
+                          onChange={(e) =>
+                            setAdminReplyDrafts((prev) => ({
+                              ...prev,
+                              [t.id]: e.target.value,
+                            }))
+                          }
+                          placeholder={
+                            lang === 'fa'
+                              ? 'پاسخ مستقیم مدیر ارشد در این پرونده...'
+                              : 'Write direct Admin response...'
+                          }
+                          style={{
+                            flex: 1,
+                            padding: '0.58rem 0.85rem',
+                            borderRadius: '10px',
+                            border: '1px solid rgba(17,18,15,0.16)',
+                            background: '#FFFFFF',
+                            fontSize: '0.83rem',
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAdminTicketReply(t.id, true)}
+                          className="owj-btn owj-btn--lime owj-btn--sm"
+                        >
+                          <Send size={13} />
+                          <span>
+                            {lang === 'fa' ? 'ارسال پاسخ و بستن' : 'Reply & Resolve'}
+                          </span>
+                        </button>
+                      </Stack>
+                    )}
                   </Box>
-                  <Link
-                    to="/operator"
-                    className="owj-btn owj-btn--outline owj-btn--sm"
-                  >
-                    <span>{lang === 'fa' ? 'بررسی و پاسخ' : 'Inspect & Reply'}</span>
-                  </Link>
-                </Box>
-              ))}
+                );
+              })}
             </Stack>
           </Paper>
         )}

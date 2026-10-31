@@ -13,8 +13,16 @@ export function LanguageProvider({ children }) {
 
   useEffect(() => {
     const dir = lang === 'fa' ? 'rtl' : 'ltr';
-    document.documentElement.setAttribute('lang', lang);
-    document.documentElement.setAttribute('dir', dir);
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('lang', lang);
+      document.documentElement.setAttribute('dir', dir);
+      if (typeof document.title === 'string') {
+        document.title =
+          lang === 'fa'
+            ? 'اوجیفای | OWJIFY — بازارگاه خدمات تخصصی'
+            : 'OWJIFY — Professional Services Marketplace';
+      }
+    }
     writeStorage(STORAGE_KEYS.LANG, lang);
   }, [lang]);
 
@@ -34,7 +42,9 @@ export function LanguageProvider({ children }) {
       isRTL: lang === 'fa',
       dir: lang === 'fa' ? 'rtl' : 'ltr',
       setLang,
+      setLanguage: setLang,
       toggleLang,
+      toggleLanguage: toggleLang,
       l,
       ui: UI_TEXT[lang] || UI_TEXT.fa,
     }),

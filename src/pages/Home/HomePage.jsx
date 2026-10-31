@@ -38,8 +38,13 @@ import styles from './HomePage.module.scss';
 
 export default function HomePage() {
   const { lang, isRTL, l, ui } = useLanguage();
-  const { hasToken, isProfessional } = useAuth();
-  const { advertisements, professionals, reviews, openSkillRequestModal } = useMarketplace();
+  const { hasToken, isProfessional, isCustomer, isAdmin, isOperator } = useAuth();
+  const {
+    activeCategories,
+    advertisements,
+    professionals,
+    reviews,
+  } = useMarketplace();
   const { showToast } = useToast();
   const { prefersReduced, fadeUp } = useMotionSafe();
   const navigate = useNavigate();
@@ -273,7 +278,7 @@ export default function HomePage() {
                     aria-label={ui.hero.allCategories}
                   >
                     <option value="">{ui.hero.allCategories}</option>
-                    {CATEGORIES.map((c) => (
+                    {activeCategories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {l(c.name)}
                       </option>
@@ -411,7 +416,7 @@ export default function HomePage() {
           </motion.div>
 
           <Grid container spacing={{ xs: 2, md: 2.5 }}>
-            {CATEGORIES.map((cat, idx) => {
+            {activeCategories.slice(0, 8).map((cat, idx) => {
               const count = activeAds.filter((a) => a.categoryId === cat.id).length;
               return (
                 <Grid key={cat.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
@@ -457,7 +462,7 @@ export default function HomePage() {
                   : 'Top-rated masters trusted by clients'}
               </h2>
             </div>
-            <Link to="/explore" className="owj-btn owj-btn--dark">
+            <Link to="/explore?tab=professionals" className="owj-btn owj-btn--dark">
               <span>{lang === 'fa' ? 'کاوش تمام متخصصان' : 'Discover Specialists'}</span>
               <DirArrow size={16} />
             </Link>
@@ -792,20 +797,18 @@ export default function HomePage() {
                           <DirArrow size={17} />
                         </Link>
                       </MagneticButton>
-                      <button
-                        type="button"
-                        onClick={() => openSkillRequestModal()}
+                      <Link
+                        to="/explore"
                         className="owj-btn owj-btn--outline owj-btn--lg"
                       >
-                        <Sparkles size={17} />
-                        <span>{lang === 'fa' ? 'درخواست مهارت' : 'Request a Skill'}</span>
-                      </button>
+                        {lang === 'fa' ? 'مشاهده آگهی‌ها' : 'Browse Services'}
+                      </Link>
                     </>
-                  ) : (
+                  ) : isCustomer ? (
                     <>
                       <MagneticButton>
                         <Link
-                          to="/explore"
+                          to="/explore?tab=professionals"
                           className="owj-btn owj-btn--dark owj-btn--lg"
                           style={{ width: '100%' }}
                         >
@@ -816,13 +819,39 @@ export default function HomePage() {
                         </Link>
                       </MagneticButton>
                       <Link
-                        to="/messages"
+                        to="/dashboard"
                         className="owj-btn owj-btn--outline owj-btn--lg"
                       >
-                        {lang === 'fa' ? 'پیام‌های ارسالی من' : 'My Sent Messages'}
+                        {lang === 'fa' ? 'داشبورد من' : 'My Dashboard'}
                       </Link>
                     </>
-                  )
+                  ) : isAdmin ? (
+                    <MagneticButton>
+                      <Link
+                        to="/admin"
+                        className="owj-btn owj-btn--dark owj-btn--lg"
+                        style={{ width: '100%' }}
+                      >
+                        <span>
+                          {lang === 'fa' ? 'ورود به پنل مدیریت و CRM' : 'Open Admin & CRM'}
+                        </span>
+                        <DirArrow size={17} />
+                      </Link>
+                    </MagneticButton>
+                  ) : isOperator ? (
+                    <MagneticButton>
+                      <Link
+                        to="/operator"
+                        className="owj-btn owj-btn--dark owj-btn--lg"
+                        style={{ width: '100%' }}
+                      >
+                        <span>
+                          {lang === 'fa' ? 'ورود به میز پشتیبانی' : 'Open Support Desk'}
+                        </span>
+                        <DirArrow size={17} />
+                      </Link>
+                    </MagneticButton>
+                  ) : null
                 ) : (
                   <>
                     <MagneticButton>

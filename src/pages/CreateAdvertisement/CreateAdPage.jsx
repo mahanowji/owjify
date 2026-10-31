@@ -41,7 +41,7 @@ const INITIAL_FORM = {
   description: '',
   deliverables: ['', ''],
   skills: [],
-  pricingType: 'شروع تعرفه خدمت',
+  pricingType: 'شروع تعرفه خدمت | Starting Service Rate',
   price: '2500000',
   locationId: 'tehran',
   remoteAvailable: true,
@@ -58,12 +58,24 @@ export default function CreateAdPage() {
   const navigate = useNavigate();
   const { lang, isRTL, l } = useLanguage();
   const { user } = useAuth();
-  const { advertisements, createAdvertisement, updateAdvertisement } = useMarketplace();
+  const {
+    activeCategories,
+    advertisements,
+    createAdvertisement,
+    updateAdvertisement,
+  } = useMarketplace();
   const { showToast } = useToast();
 
   const existingAd = useMemo(
     () => (editAdId ? advertisements.find((a) => a.id === editAdId) : null),
     [editAdId, advertisements]
+  );
+
+  const isForbiddenEdit = Boolean(
+    editAdId &&
+      existingAd &&
+      existingAd.ownerUserId !== user?.id &&
+      existingAd.proId !== user?.proId
   );
 
   const [step, setStep] = useState(1);
@@ -76,6 +88,17 @@ export default function CreateAdPage() {
   const [publishedAd, setPublishedAd] = useState(null);
 
   useEffect(() => {
+    if (isForbiddenEdit) {
+      showToast({
+        title:
+          lang === 'fa'
+            ? 'شما فقط مجاز به ویرایش آگهی‌های خود هستید'
+            : 'You can only edit your own listings',
+        type: 'error',
+      });
+      navigate('/dashboard?tab=ads', { replace: true });
+      return;
+    }
     if (existingAd) {
       setForm({
         categoryId: existingAd.categoryId,
@@ -102,9 +125,10 @@ export default function CreateAdPage() {
         setSavedDraftBanner(draft);
       }
     }
-  }, [existingAd, l]);
+  }, [existingAd, isForbiddenEdit, navigate, showToast, lang, l]);
 
-  const currentCategory = getCategoryById(form.categoryId);
+  const currentCategory =
+    activeCategories.find((c) => c.id === form.categoryId) || getCategoryById(form.categoryId);
 
   const stepLabels = [
     { n: 1, fa: 'دسته‌بندی', en: 'Category' },
@@ -403,7 +427,7 @@ export default function CreateAdPage() {
                   : '1. Select Category & Subcategory'}
               </h2>
               <div className={styles.catSelectGrid}>
-                {CATEGORIES.map((cat) => (
+                {activeCategories.map((cat) => (
                   <button
                     key={cat.id}
                     type="button"
@@ -411,7 +435,7 @@ export default function CreateAdPage() {
                       setForm((p) => ({
                         ...p,
                         categoryId: cat.id,
-                        subcategoryId: cat.subcategories[0]?.id || '',
+                        subcategoryId: cat.subcategories?.[0]?.id || '',
                       }))
                     }
                     className={`${styles.catOption} ${

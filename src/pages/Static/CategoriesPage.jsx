@@ -3,12 +3,14 @@ import { Container, Grid, Stack } from '@mui/material';
 import PageTransition from '../../components/common/PageTransition';
 import CategoryIcon from '../../components/common/CategoryIcon';
 import SmartImage from '../../components/common/SmartImage';
-import { CATEGORIES } from '../../data/categories';
 import { useLanguage } from '../../context/LanguageContext';
+import { useMarketplace } from '../../context/MarketplaceContext';
+import { formatNumber } from '../../utils/formatters';
 import styles from './StaticPages.module.scss';
 
 export default function CategoriesPage() {
   const { lang, l } = useLanguage();
+  const { activeCategories } = useMarketplace();
 
   return (
     <PageTransition>
@@ -19,8 +21,8 @@ export default function CategoriesPage() {
           </span>
           <h1 className={styles.heroTitle}>
             {lang === 'fa'
-              ? '۸ حوزه اصلی و بیش از ۳۵ تخصص حرفه‌ای'
-              : '8 Core Disciplines & 35+ Specialist Subcategories'}
+              ? `${formatNumber(activeCategories.length, lang)} حوزه اصلی و بیش از ۳۵ تخصص حرفه‌ای`
+              : `${activeCategories.length} Core Disciplines & 35+ Specialist Subcategories`}
           </h1>
           <p className={styles.heroLead}>
             {lang === 'fa'
@@ -32,7 +34,7 @@ export default function CategoriesPage() {
 
       <Container maxWidth="xl" sx={{ py: { xs: 4, md: 6 } }}>
         <Grid container spacing={3}>
-          {CATEGORIES.map((cat) => (
+          {activeCategories.map((cat) => (
             <Grid key={cat.id} size={{ xs: 12, md: 6 }}>
               <div className={styles.card} style={{ height: '100%' }}>
                 <div
@@ -61,7 +63,7 @@ export default function CategoriesPage() {
                 </p>
 
                 <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
-                  {cat.subcategories.map((sub) => (
+                  {(cat.subcategories || []).map((sub) => (
                     <Link
                       key={sub.id}
                       to={`/explore?category=${cat.id}&subcategory=${sub.id}`}

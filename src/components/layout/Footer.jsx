@@ -11,7 +11,7 @@ import styles from './Footer.module.scss';
 
 export default function Footer() {
   const { lang, isRTL, ui } = useLanguage();
-  const { hasToken, isProfessional, isOperator, isAdmin } = useAuth();
+  const { hasToken, isProfessional, isCustomer, isOperator, isAdmin } = useAuth();
   const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
@@ -103,12 +103,21 @@ export default function Footer() {
                 <Link to="/explore">{ui.nav.explore}</Link>
               </li>
               <li>
+                <Link to="/explore?tab=professionals">
+                  {lang === 'fa' ? 'فهرست متخصصان' : 'Specialists Directory'}
+                </Link>
+              </li>
+              <li>
                 <Link to="/categories">{ui.nav.categories}</Link>
               </li>
               {(!hasToken || isProfessional) && (
                 <li>
                   <Link
-                    to={hasToken && isProfessional ? '/create-ad' : '/auth/register'}
+                    to={
+                      hasToken && isProfessional
+                        ? '/create-ad'
+                        : '/auth/signup?role=professional'
+                    }
                   >
                     {ui.nav.createAd}
                   </Link>
@@ -141,18 +150,74 @@ export default function Footer() {
           </div>
 
           <div className={styles.linksCol}>
-            <h4>{lang === 'fa' ? 'سامانه‌های مدیریتی و قوانین' : 'Portals & Legal'}</h4>
+            <h4>
+              {isAdmin
+                ? lang === 'fa'
+                  ? 'مدیریت سامانه و قوانین'
+                  : 'Administration & Legal'
+                : isOperator
+                ? lang === 'fa'
+                  ? 'میز پشتیبانی و قوانین'
+                  : 'Support Desk & Legal'
+                : hasToken
+                ? lang === 'fa'
+                  ? 'حساب کاربری و قوانین'
+                  : 'Account & Legal'
+                : lang === 'fa'
+                ? 'دسترسی و قوانین'
+                : 'Access & Legal'}
+            </h4>
             <ul>
-              <li>
-                <Link to="/operator">
-                  {lang === 'fa' ? 'ورود اپراتور پشتیبانی (API)' : 'Support Operator Portal'}
-                </Link>
-              </li>
-              <li>
-                <Link to={isAdmin ? '/admin' : '/auth/login'}>
-                  {lang === 'fa' ? 'پنل مدیریت و CRM' : 'Admin & CRM Dashboard'}
-                </Link>
-              </li>
+              {isAdmin && (
+                <>
+                  <li>
+                    <Link to="/admin">
+                      {lang === 'fa' ? 'پنل مدیریت و CRM' : 'Admin & CRM Console'}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/operator">
+                      {lang === 'fa' ? 'کنسول اپراتور پشتیبانی' : 'Operator Support Desk'}
+                    </Link>
+                  </li>
+                </>
+              )}
+
+              {isOperator && (
+                <>
+                  <li>
+                    <Link to="/operator">
+                      {lang === 'fa' ? 'میز کار اپراتور پشتیبانی' : 'Operator Console'}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/settings">{ui.nav.settings}</Link>
+                  </li>
+                </>
+              )}
+
+              {(isCustomer || isProfessional) && (
+                <>
+                  <li>
+                    <Link to="/dashboard">{ui.nav.dashboard}</Link>
+                  </li>
+                  <li>
+                    <Link to="/saved">{ui.nav.saved}</Link>
+                  </li>
+                </>
+              )}
+
+              {!hasToken && (
+                <>
+                  <li>
+                    <Link to="/auth/login">{ui.nav.login}</Link>
+                  </li>
+                  <li>
+                    <Link to="/auth/signup">{ui.nav.register}</Link>
+                  </li>
+                </>
+              )}
+
               <li>
                 <Link to="/terms">{ui.nav.terms}</Link>
               </li>

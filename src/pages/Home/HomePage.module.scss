@@ -161,14 +161,16 @@ html[lang='fa'] .heroTitle {
 // Asymmetric Layered Hero Showcase
 .heroVisual {
   position: relative;
-  min-height: 430px;
+  min-height: 455px;
+  padding-block: 2.2rem 3.2rem;
   display: flex;
   align-items: center;
   justify-content: center;
 
   @include tablet {
-    min-height: 350px;
-    margin-top: 1rem;
+    min-height: 410px;
+    padding-block: 2.4rem 3.4rem;
+    margin-top: 0.75rem;
   }
 }
 

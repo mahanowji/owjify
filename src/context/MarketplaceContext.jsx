@@ -1,22 +1,15 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { marketplaceService } from '../services/marketplaceService';
 import { supportApiService } from '../services/supportApiService';
+import { toLocalizedPair } from '../utils/formatters';
 import { useAuth } from './AuthContext';
 
 const MarketplaceContext = createContext(null);
 
-function toLocalized(val) {
-  if (!val) return { fa: '', en: '' };
-  if (typeof val === 'object') {
-    return { fa: val.fa || val.en || '', en: val.en || val.fa || '' };
-  }
-  const s = String(val);
-  return { fa: s, en: s };
-}
-
 export function MarketplaceProvider({ children }) {
-  const { user, token, hasToken, isProfessional, isAdmin } = useAuth();
+  const { user, token, hasToken, isProfessional, isAdmin, isMarketplaceMember } = useAuth();
 
+  const [categories, setCategories] = useState(() => marketplaceService.getCategories());
   const [advertisements, setAdvertisements] = useState(() =>
     marketplaceService.getAdvertisements()
   );
@@ -29,9 +22,6 @@ export function MarketplaceProvider({ children }) {
   const [allConversations, setAllConversations] = useState(() =>
     marketplaceService.getConversations()
   );
-  const [allSkillRequests, setAllSkillRequests] = useState(() =>
-    marketplaceService.getSkillRequests()
-  );
   const [supportTickets, setSupportTickets] = useState(() =>
     supportApiService.getTicketsSync()
   );
@@ -39,20 +29,6 @@ export function MarketplaceProvider({ children }) {
     marketplaceService.getNotifications()
   );
   const [inquiries, setInquiries] = useState(() => marketplaceService.getInquiries());
-
-  // Provider Skill Request Modal State
-  const [skillModalState, setSkillModalState] = useState({
-    open: false,
-    presetPro: null,
-  });
-
-  const openSkillRequestModal = useCallback((presetPro = null) => {
-    setSkillModalState({ open: true, presetPro: presetPro || null });
-  }, []);
-
-  const closeSkillRequestModal = useCallback(() => {
-    setSkillModalState({ open: false, presetPro: null });
-  }, []);
 
   // Sync Support Tickets from API / Storage
   useEffect(() => {
@@ -66,14 +42,18 @@ export function MarketplaceProvider({ children }) {
     if (!targetUser || targetUser.accountType !== 'professional' || !targetUser.proId) return;
     setProfessionals((prev) => {
       const idx = prev.findIndex((p) => p.id === targetUser.proId);
-      const cleanName = targetUser.fullName?.split('|')[0]?.trim() || targetUser.fullName;
-      const mappedSkills = (targetUser.skills || []).map((s) => toLocalized(s));
+      const parsedName = toLocalizedPair(targetUser.fullName, 'متخصص اوجیفای', 'OWJIFY Specialist');
+      const mappedSkills = (targetUser.skills || []).map((s) => toLocalizedPair(s));
 
       if (idx === -1) {
         const createdPro = {
           id: targetUser.proId,
-          name: { fa: cleanName, en: cleanName },
-          title: toLocalized(targetUser.title || 'متخصص حرفه‌ای در اوجیفای'),
+          name: parsedName,
+          title: toLocalizedPair(
+            targetUser.title,
+            'متخصص حرفه‌ای در اوجیفای',
+            'OWJIFY Specialist'
+          ),
           avatar: targetUser.avatar,
           cover: targetUser.cover,
           categoryId: 'technology',
@@ -85,7 +65,11 @@ export function MarketplaceProvider({ children }) {
           verified: Boolean(targetUser.emailVerified),
           availableNow: true,
           responseTime: { fa: 'کمتر از ۳۰ دقیقه', en: 'Under 30 mins' },
-          bio: toLocalized(targetUser.bio || 'ارائه‌دهنده خدمات تخصصی در اوجیفای.'),
+          bio: toLocalizedPair(
+            targetUser.bio,
+            'ارائه‌دهنده خدمات تخصصی در اوجیفای.',
+            'Verified specialist on OWJIFY.'
+          ),
           skills: mappedSkills.length
             ? mappedSkills
             : [{ fa: 'مشاوره تخصصی', en: 'Consulting' }],
@@ -106,12 +90,18 @@ export function MarketplaceProvider({ children }) {
         i === idx
           ? {
               ...p,
-              name: { fa: cleanName, en: p.name?.en || cleanName },
-              title: targetUser.title ? toLocalized(targetUser.title) : p.title,
+              name: {
+                fa: parsedName.fa || p.name?.fa,
+                en:
+                  targetUser.fullName?.includes('|')
+                    ? parsedName.en
+                    : p.name?.en || parsedName.en,
+              },
+              title: targetUser.title ? toLocalizedPair(targetUser.title) : p.title,
               avatar: targetUser.avatar || p.avatar,
               locationId: targetUser.locationId || p.locationId,
               experienceYears: Number(targetUser.experienceYears || p.experienceYears || 5),
-              bio: targetUser.bio ? toLocalized(targetUser.bio) : p.bio,
+              bio: targetUser.bio ? toLocalizedPair(targetUser.bio) : p.bio,
               skills: mappedSkills.length ? mappedSkills : p.skills,
             }
           : p
@@ -170,17 +160,20 @@ export function MarketplaceProvider({ children }) {
       const priceNum = Number(payload.price || 1500000);
       const newAd = {
         id: `ad_${Date.now()}`,
+        ownerUserId: user.id,
         proId: user.proId || 'pro-1',
         categoryId: payload.categoryId || 'technology',
         subcategoryId: payload.subcategoryId || '',
-        title: toLocalized(payload.title),
-        shortDesc: toLocalized(payload.tagline || payload.shortDesc || payload.title),
-        description: toLocalized(payload.description),
+        title: toLocalizedPair(payload.title),
+        shortDesc: toLocalizedPair(payload.tagline || payload.shortDesc || payload.title),
+        description: toLocalizedPair(payload.description),
         deliverables: (payload.deliverables || [])
           .filter(Boolean)
-          .map((d) => toLocalized(d)),
-        skills: (payload.skills || []).filter(Boolean).map((s) => toLocalized(s)),
-        pricingType: toLocalized(payload.pricingType || 'شروع تعرفه خدمت'),
+          .map((d) => toLocalizedPair(d)),
+        skills: (payload.skills || []).filter(Boolean).map((s) => toLocalizedPair(s)),
+        pricingType: payload.pricingType
+          ? toLocalizedPair(payload.pricingType)
+          : { fa: 'شروع تعرفه خدمت', en: 'Starting at' },
         price: priceNum,
         priceUsd: Math.max(20, Math.round(priceNum / 50000)),
         locationId: payload.locationId || user.locationId || 'tehran',
@@ -221,22 +214,22 @@ export function MarketplaceProvider({ children }) {
         updatedItem = {
           ...a,
           ...updates,
-          title: updates.title ? toLocalized(updates.title) : a.title,
+          title: updates.title ? toLocalizedPair(updates.title) : a.title,
           shortDesc:
             updates.tagline || updates.shortDesc
-              ? toLocalized(updates.tagline || updates.shortDesc)
+              ? toLocalizedPair(updates.tagline || updates.shortDesc)
               : a.shortDesc,
           description: updates.description
-            ? toLocalized(updates.description)
+            ? toLocalizedPair(updates.description)
             : a.description,
           deliverables: updates.deliverables
-            ? updates.deliverables.filter(Boolean).map((d) => toLocalized(d))
+            ? updates.deliverables.filter(Boolean).map((d) => toLocalizedPair(d))
             : a.deliverables,
           skills: updates.skills
-            ? updates.skills.filter(Boolean).map((s) => toLocalized(s))
+            ? updates.skills.filter(Boolean).map((s) => toLocalizedPair(s))
             : a.skills,
           pricingType: updates.pricingType
-            ? toLocalized(updates.pricingType)
+            ? toLocalizedPair(updates.pricingType)
             : a.pricingType,
           price: updates.price !== undefined ? Number(updates.price) : a.price,
         };
@@ -268,18 +261,23 @@ export function MarketplaceProvider({ children }) {
     });
   }, []);
 
-  // Reviews
+  // Reviews (compatible with both ServiceDetailsPage, ProfessionalProfilePage & DashboardPage)
   const addReview = useCallback(
     ({ adId, proId, rating, comment }) => {
       if (!hasToken || !user) return null;
+      const authorObj = toLocalizedPair(user.fullName, 'کاربر اوجیفای', 'OWJIFY Member');
       const newRev = {
         id: `rev_${Date.now()}`,
         adId,
         proId,
-        authorName: toLocalized(user.fullName?.split('|')[0]?.trim() || 'کاربر اوجیفای'),
+        authorUserId: user.id,
+        author: authorObj,
+        authorName: authorObj,
+        role: toLocalizedPair(user.title, 'کارفرما', 'Client'),
+        avatar: user.avatar,
         authorAvatar: user.avatar,
         rating: Number(rating || 5),
-        comment: toLocalized(comment),
+        comment: toLocalizedPair(comment),
         createdAt: new Date().toISOString(),
       };
       setReviews((prev) => {
@@ -293,17 +291,85 @@ export function MarketplaceProvider({ children }) {
   );
 
   const replyToReview = useCallback((reviewId, replyText) => {
+    const replyObj = toLocalizedPair(replyText);
     setReviews((prev) => {
       const next = prev.map((r) =>
         r.id === reviewId
           ? {
               ...r,
-              proReply: toLocalized(replyText),
+              reply: replyObj,
+              proReply: replyObj,
               repliedAt: new Date().toISOString(),
             }
           : r
       );
       marketplaceService.saveReviews(next);
+      return next;
+    });
+  }, []);
+
+  const deleteReview = useCallback((reviewId) => {
+    setReviews((prev) => {
+      const next = prev.filter((r) => r.id !== reviewId);
+      marketplaceService.saveReviews(next);
+      return next;
+    });
+  }, []);
+
+  // Category Management (Admin)
+  const addCategory = useCallback((payload) => {
+    const slugBase =
+      (payload.nameEn || 'category')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '') || `cat-${Date.now()}`;
+    const newCat = {
+      id: `${slugBase}-${Math.floor(10 + Math.random() * 89)}`,
+      slug: slugBase,
+      icon: payload.icon || 'Sparkles',
+      active: true,
+      name: {
+        fa: payload.nameFa?.trim() || payload.nameEn?.trim() || 'دسته‌بندی جدید',
+        en: payload.nameEn?.trim() || payload.nameFa?.trim() || 'New Category',
+      },
+      tagline: {
+        fa: payload.taglineFa?.trim() || 'خدمات تخصصی منتخب در اوجیفای',
+        en: payload.taglineEn?.trim() || 'Curated specialist services on OWJIFY',
+      },
+      accent: '#C7F36B',
+      cover:
+        payload.cover ||
+        'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80',
+      subcategories: [
+        {
+          id: `${slugBase}-general`,
+          name: { fa: 'خدمات عمومی و مشاوره', en: 'General & Consulting' },
+        },
+      ],
+      suggestedSkills: [{ fa: 'مشاوره تخصصی', en: 'Specialist Consulting' }],
+    };
+    setCategories((prev) => {
+      const next = [...prev, newCat];
+      marketplaceService.saveCategories(next);
+      return next;
+    });
+    return newCat;
+  }, []);
+
+  const updateCategory = useCallback((categoryId, patch) => {
+    setCategories((prev) => {
+      const next = prev.map((c) => (c.id === categoryId ? { ...c, ...patch } : c));
+      marketplaceService.saveCategories(next);
+      return next;
+    });
+  }, []);
+
+  const toggleCategoryActive = useCallback((categoryId) => {
+    setCategories((prev) => {
+      const next = prev.map((c) =>
+        c.id === categoryId ? { ...c, active: c.active === false ? true : false } : c
+      );
+      marketplaceService.saveCategories(next);
       return next;
     });
   }, []);
@@ -317,7 +383,7 @@ export function MarketplaceProvider({ children }) {
         id: `m_${Date.now()}`,
         senderUserId: user.id,
         senderProId: user.proId || null,
-        text: toLocalized(text.trim()),
+        text: toLocalizedPair(text.trim()),
         createdAt: now,
       };
       setAllConversations((prev) => {
@@ -345,7 +411,7 @@ export function MarketplaceProvider({ children }) {
         id: `m_${Date.now()}`,
         senderUserId: user.id,
         senderProId: user.proId || null,
-        text: toLocalized(messageText),
+        text: toLocalizedPair(messageText),
         createdAt: now,
       };
 
@@ -369,15 +435,14 @@ export function MarketplaceProvider({ children }) {
         }
 
         targetId = `conv_${Date.now()}`;
-        const cleanSender = user.fullName?.split('|')[0]?.trim() || 'کاربر اوجیفای';
         const created = {
           id: targetId,
           threadKind: 'service_inquiry',
           initiatorUserId: user.id,
           initiatorProId: user.proId || null,
           initiatorRole: user.accountType,
-          initiatorName: toLocalized(cleanSender),
-          initiatorTitle: toLocalized(user.title || 'کارفرما'),
+          initiatorName: toLocalizedPair(user.fullName, 'کاربر اوجیفای', 'OWJIFY Member'),
+          initiatorTitle: toLocalizedPair(user.title, 'کارفرما', 'Client'),
           initiatorAvatar: user.avatar,
           recipientUserId: pro.id === 'pro-1' ? 'user-pro-demo' : `user_${pro.id}`,
           recipientProId: pro.id,
@@ -387,7 +452,7 @@ export function MarketplaceProvider({ children }) {
           online: Boolean(pro.availableNow),
           unreadByInitiator: 0,
           unreadByRecipient: 1,
-          serviceTitle: toLocalized(serviceTitle || pro.title),
+          serviceTitle: toLocalizedPair(serviceTitle || pro.title),
           updatedAt: now,
           messages: [msg],
         };
@@ -418,112 +483,6 @@ export function MarketplaceProvider({ children }) {
     },
     [user]
   );
-
-  // Provider-Only Skill Requests
-  const createSkillRequest = useCallback(
-    (payload) => {
-      if (!hasToken || !isProfessional || !user) {
-        throw new Error('PROVIDER_ROLE_REQUIRED');
-      }
-      const now = new Date().toISOString();
-      const targetPro = payload.targetProId
-        ? professionals.find((p) => p.id === payload.targetProId)
-        : null;
-
-      let linkedConvId = null;
-      if (payload.requestType === 'specialist_collaboration' && targetPro) {
-        linkedConvId = `conv_sr_${Date.now()}`;
-        const cleanSender = user.fullName?.split('|')[0]?.trim() || 'متخصص اوجیفای';
-        const srConv = {
-          id: linkedConvId,
-          threadKind: 'skill_request',
-          requestedSkill: toLocalized(payload.skillName),
-          initiatorUserId: user.id,
-          initiatorProId: user.proId || null,
-          initiatorRole: 'professional',
-          initiatorName: toLocalized(cleanSender),
-          initiatorTitle: toLocalized(user.title || 'متخصص'),
-          initiatorAvatar: user.avatar,
-          recipientUserId: `user_${targetPro.id}`,
-          recipientProId: targetPro.id,
-          recipientName: targetPro.name,
-          recipientTitle: targetPro.title,
-          recipientAvatar: targetPro.avatar,
-          online: true,
-          unreadByInitiator: 0,
-          unreadByRecipient: 1,
-          serviceTitle: {
-            fa: `همکاری تخصصی: ${payload.skillName}`,
-            en: `Skill Request: ${payload.skillName}`,
-          },
-          updatedAt: now,
-          messages: [
-            {
-              id: `m_sr_${Date.now()}`,
-              senderUserId: user.id,
-              senderProId: user.proId || null,
-              text: toLocalized(
-                payload.details ||
-                  `درخواست همکاری تخصصی در مهارت «${payload.skillName}»`
-              ),
-              createdAt: now,
-            },
-          ],
-        };
-        setAllConversations((prev) => {
-          const next = [srConv, ...prev];
-          marketplaceService.saveConversations(next);
-          return next;
-        });
-      }
-
-      if (payload.addToMyProfile && user.proId) {
-        setProfessionals((prev) => {
-          const next = prev.map((p) =>
-            p.id === user.proId
-              ? { ...p, skills: [...(p.skills || []), toLocalized(payload.skillName)] }
-              : p
-          );
-          marketplaceService.saveProfessionals(next);
-          return next;
-        });
-      }
-
-      const newReq = {
-        id: `sr_${Date.now()}`,
-        requestType: payload.requestType || 'specialist_collaboration',
-        categoryId: payload.categoryId || 'technology',
-        skillName: toLocalized(payload.skillName),
-        requesterUserId: user.id,
-        requesterProId: user.proId || 'pro-1',
-        targetProId: targetPro?.id || null,
-        targetProName: targetPro?.name || null,
-        urgency: payload.urgency || 'normal',
-        budget: payload.budget || '',
-        details: toLocalized(payload.details || payload.skillName),
-        status: 'open',
-        conversationId: linkedConvId,
-        createdAt: now,
-      };
-
-      setAllSkillRequests((prev) => {
-        const next = [newReq, ...prev];
-        marketplaceService.saveSkillRequests(next);
-        return next;
-      });
-
-      return newReq;
-    },
-    [hasToken, isProfessional, user, professionals]
-  );
-
-  const updateSkillRequestStatus = useCallback((reqId, status) => {
-    setAllSkillRequests((prev) => {
-      const next = prev.map((r) => (r.id === reqId ? { ...r, status } : r));
-      marketplaceService.saveSkillRequests(next);
-      return next;
-    });
-  }, []);
 
   // Provider Dashboard Helpers (Availability, Portfolio, Inquiries)
   const updateInquiryStatus = useCallback((inqId, status) => {
@@ -556,8 +515,14 @@ export function MarketplaceProvider({ children }) {
   const addPortfolioProject = useCallback((proId, project) => {
     const newItem = {
       id: `pf_${Date.now()}`,
-      title: toLocalized(project.title),
-      category: toLocalized(project.category || 'پروژه تخصصی'),
+      title: toLocalizedPair(project.title),
+      year: project.year || '2026',
+      summary: toLocalizedPair(
+        project.summary,
+        'پروژه اجرایی ثبت‌شده در پورتفولیو',
+        'Verified portfolio project'
+      ),
+      category: toLocalizedPair(project.category, 'پروژه تخصصی', 'Featured Project'),
       image:
         project.image ||
         'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80',
@@ -641,7 +606,7 @@ export function MarketplaceProvider({ children }) {
         {
           ticketId,
           replyText,
-          authorName: authorName || user?.fullName || 'Support Operator',
+          authorName: authorName || user?.fullName || 'اپراتور پشتیبانی | Support Operator',
           authorRole: authorRole || user?.accountType || 'operator',
           nextStatus,
         },
@@ -660,6 +625,22 @@ export function MarketplaceProvider({ children }) {
       return nextList;
     },
     [token]
+  );
+
+  const escalateSupportTicket = useCallback(
+    async ({ ticketId, reason }) => {
+      const nextList = await supportApiService.escalateTicket(
+        {
+          ticketId,
+          reason,
+          authorName: user?.fullName || 'اپراتور پشتیبانی | Support Operator',
+        },
+        token
+      );
+      setSupportTickets(nextList);
+      return nextList;
+    },
+    [user, token]
   );
 
   // Decorated Role-Scoped Conversations for Messenger & Dashboard
@@ -718,17 +699,6 @@ export function MarketplaceProvider({ children }) {
       .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   }, [allConversations, hasToken, user, isProfessional]);
 
-  const skillRequests = useMemo(() => {
-    if (!hasToken || (!isProfessional && !isAdmin) || !user) return [];
-    if (isAdmin) return allSkillRequests;
-    return allSkillRequests.filter(
-      (r) =>
-        r.requesterUserId === user.id ||
-        r.requesterProId === user.proId ||
-        r.targetProId === user.proId
-    );
-  }, [allSkillRequests, hasToken, isProfessional, isAdmin, user]);
-
   const unreadNotificationsCount = useMemo(
     () => (hasToken ? notifications.filter((n) => !n.read).length : 0),
     [notifications, hasToken]
@@ -739,14 +709,28 @@ export function MarketplaceProvider({ children }) {
     [conversations, hasToken]
   );
 
+  const activeCategories = useMemo(
+    () => categories.filter((c) => c.active !== false),
+    [categories]
+  );
+
   const openSupportTicketsCount = useMemo(
     () =>
-      supportTickets.filter((t) => t.status === 'open' || t.status === 'in_progress').length,
+      supportTickets.filter(
+        (t) => t.status === 'open' || t.status === 'in_progress' || t.status === 'escalated'
+      ).length,
+    [supportTickets]
+  );
+
+  const escalatedTicketsCount = useMemo(
+    () => supportTickets.filter((t) => t.status === 'escalated').length,
     [supportTickets]
   );
 
   const value = useMemo(
     () => ({
+      categories,
+      activeCategories,
       advertisements,
       professionals,
       reviews,
@@ -754,19 +738,18 @@ export function MarketplaceProvider({ children }) {
       favoritePros: hasToken ? favoritePros : [],
       allConversations,
       conversations,
-      skillRequests,
-      skillModalState,
-      openSkillRequestModal,
-      closeSkillRequestModal,
       supportTickets,
       openSupportTicketsCount,
+      escalatedTicketsCount,
       notifications: hasToken ? notifications : [],
       inquiries,
       unreadNotificationsCount,
       unreadMessagesCount,
+      addCategory,
+      updateCategory,
+      toggleCategoryActive,
       toggleFavoriteAd,
       toggleFavoritePro,
-      // Canonical + Shorthand aliases so all pages work seamlessly
       createAdvertisement,
       createAd: createAdvertisement,
       updateAdvertisement,
@@ -776,12 +759,12 @@ export function MarketplaceProvider({ children }) {
       deleteAd: deleteAdvertisement,
       addReview,
       replyToReview,
+      deleteReview,
+      adminDeleteReview: deleteReview,
       sendMessageInConversation,
       sendMessage: sendMessageInConversation,
       startOrSendConversation,
       markConversationRead,
-      createSkillRequest,
-      updateSkillRequestStatus,
       updateInquiryStatus,
       updateProfessionalAvailability,
       addPortfolioProject,
@@ -795,8 +778,11 @@ export function MarketplaceProvider({ children }) {
       createSupportTicket,
       replySupportTicket,
       updateSupportTicketStatus,
+      escalateSupportTicket,
     }),
     [
+      categories,
+      activeCategories,
       advertisements,
       professionals,
       reviews,
@@ -805,16 +791,16 @@ export function MarketplaceProvider({ children }) {
       favoritePros,
       allConversations,
       conversations,
-      skillRequests,
-      skillModalState,
-      openSkillRequestModal,
-      closeSkillRequestModal,
       supportTickets,
       openSupportTicketsCount,
+      escalatedTicketsCount,
       notifications,
       inquiries,
       unreadNotificationsCount,
       unreadMessagesCount,
+      addCategory,
+      updateCategory,
+      toggleCategoryActive,
       toggleFavoriteAd,
       toggleFavoritePro,
       createAdvertisement,
@@ -823,11 +809,10 @@ export function MarketplaceProvider({ children }) {
       deleteAdvertisement,
       addReview,
       replyToReview,
+      deleteReview,
       sendMessageInConversation,
       startOrSendConversation,
       markConversationRead,
-      createSkillRequest,
-      updateSkillRequestStatus,
       updateInquiryStatus,
       updateProfessionalAvailability,
       addPortfolioProject,
@@ -840,6 +825,7 @@ export function MarketplaceProvider({ children }) {
       createSupportTicket,
       replySupportTicket,
       updateSupportTicketStatus,
+      escalateSupportTicket,
     ]
   );
 

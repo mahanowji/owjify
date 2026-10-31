@@ -245,14 +245,10 @@ export const SEED_CONVERSATIONS = [
     ],
   },
 
-  // 6) SENT BY Demo Provider (Arian Radmehr) TO Another Provider (Keyvan Bahrami, pro-3) — SKILL REQUEST!
+  // 6) SENT BY Demo Provider (Arian Radmehr) TO Another Provider (Keyvan Bahrami, pro-3)
   {
-    id: 'conv-pro1-to-pro3-skill',
-    threadKind: 'skill_request',
-    requestedSkill: {
-      fa: 'طراحی داشبورد IoT پایش دما',
-      en: 'IoT Telemetry Web Dashboard',
-    },
+    id: 'conv-pro1-to-pro3',
+    threadKind: 'direct_message',
     initiatorUserId: 'user-pro-demo',
     initiatorProId: 'pro-1',
     initiatorRole: 'professional',
@@ -270,8 +266,8 @@ export const SEED_CONVERSATIONS = [
     unreadByInitiator: 1,
     unreadByRecipient: 0,
     serviceTitle: {
-      fa: 'درخواست مهارت: پنل مانیتورینگ سنسورهای موتورخانه هوشمند',
-      en: 'Skill Request: Smart Chiller Room IoT Dashboard',
+      fa: 'طراحی پنل مانیتورینگ سنسورهای موتورخانه هوشمند',
+      en: 'Smart Chiller Room IoT Dashboard',
     },
     updatedAt: '2026-10-30T10:35:00Z',
     messages: [
@@ -279,8 +275,8 @@ export const SEED_CONVERSATIONS = [
         id: 'm-pp3-1',
         senderUserId: 'user-pro-demo',
         text: {
-          fa: 'سلام مهندس بهرامی، برای یکی از پروژه‌های برج اداری نیازمند مهارت «طراحی داشبورد IoT پایش دما» جهت نمایش لحظه‌ای سنسورهای چیلر هستم. امکان همکاری مشترک دارید؟',
-          en: 'Hi Keyvan, I am submitting a skill request for "IoT Telemetry Web Dashboard" to visualize live chiller sensors for a commercial tower client. Open to collaborating?',
+          fa: 'سلام مهندس بهرامی، آگهی طراحی سامانه شما را دیدم. برای یکی از پروژه‌های برج اداری نیاز به پنل مانیتورینگ لحظه‌ای سنسورهای چیلر دارم. شرایط همکاری چطور است؟',
+          en: 'Hi Keyvan, I saw your web engineering listing and would like to connect regarding a live chiller room sensor dashboard for a commercial tower.',
         },
         createdAt: '2026-10-30T09:50:00Z',
       },
@@ -288,8 +284,8 @@ export const SEED_CONVERSATIONS = [
         id: 'm-pp3-2',
         senderUserId: 'user-pro-3',
         text: {
-          fa: 'سلام مهندس رادمهر عزیز! بله حتماً، قبلاً با پروتکل‌های MQTT و Modbus کار کرده‌ام. مشخصات سنسورها را بفرستید تا معماری پنل را آماده کنم.',
-          en: 'Hi Arian! Absolutely—I have built real-time MQTT/Modbus dashboards before. Send over the sensor specs and we can scope it right away.',
+          fa: 'سلام مهندس رادمهر عزیز! بله حتماً، قبلاً با پروتکل‌های MQTT و Modbus کار کرده‌ام. مشخصات سنسورها را بفرستید تا جزئیات را هماهنگ کنیم.',
+          en: 'Hi Arian! Absolutely—I have built real-time MQTT/Modbus dashboards before. Send over the sensor specs and we can coordinate right away.',
         },
         createdAt: '2026-10-30T10:35:00Z',
       },

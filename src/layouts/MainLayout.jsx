@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import Navbar from '../components/navigation/Navbar';
 import Footer from '../components/layout/Footer';
-import SkillRequestModal from '../components/marketplace/SkillRequestModal';
 import styles from './MainLayout.module.scss';
 
 export default function MainLayout() {
@@ -12,7 +11,6 @@ export default function MainLayout() {
         <Outlet />
       </main>
       <Footer />
-      <SkillRequestModal />
     </div>
   );
 }

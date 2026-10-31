@@ -44,10 +44,14 @@ const DEFAULT_DEMO_USERS = [
       'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80',
     title: 'بنیان‌گذار و مدیر ارشد نرم‌افزار اوجیفای | Founder & Platform Admin',
     locationId: 'tehran',
-    bio: 'بنیان‌گذار اوجیفای؛ با هدف پیوند دادن انسان‌ها، مهارت‌ها و فرصت‌های واقعی به یکدیگر.',
+    bio: 'بنیان‌گذار اوجیفای؛ با هدف پیوند دادن انسان‌ها، مهارت‌ها و فرصت‌های واقعی به یکدیگر. | Founder of OWJIFY, dedicated to connecting people, verified skills, and real opportunities.',
     phone: '09120001380',
     experienceYears: 8,
-    skills: ['مدیریت پلتفرم', 'معماری نرم‌افزار', 'راهبری محصول'],
+    skills: [
+      'مدیریت پلتفرم | Platform Management',
+      'معماری نرم‌افزار | Software Architecture',
+      'راهبری محصول | Product Leadership',
+    ],
     createdAt: '2026-01-01T08:00:00Z',
   },
   {
@@ -66,10 +70,14 @@ const DEFAULT_DEMO_USERS = [
       'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80',
     title: 'اپراتور ارشد پشتیبانی و رسیدگی به گزارش‌ها | Support Operator',
     locationId: 'tehran',
-    bio: 'پاسخ‌گویی سریع به تیکت‌های کاربران و بررسی گزارش‌های بازارگاه از طریق API پشتیبانی.',
+    bio: 'پاسخ‌گویی سریع به تیکت‌های کاربران و بررسی گزارش‌های بازارگاه از طریق API پشتیبانی. | Fast ticket resolution and marketplace safety review via Support API.',
     phone: '09121112233',
     experienceYears: 6,
-    skills: ['پشتیبانی کاربران', 'رسیدگی به گزارش‌ها', 'کنترل کیفیت'],
+    skills: [
+      'پشتیبانی کاربران | User Support',
+      'رسیدگی به گزارش‌ها | Trust & Safety',
+      'کنترل کیفیت | Quality Assurance',
+    ],
     createdAt: '2026-01-10T09:00:00Z',
   },
   {
@@ -86,12 +94,12 @@ const DEFAULT_DEMO_USERS = [
       'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
     cover:
       'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1000&q=80',
-    title: 'مهندس ارشد تهویه مطبوع و سیستم‌های VRF',
+    title: 'مهندس ارشد تهویه مطبوع و سیستم‌های VRF | Senior HVAC & VRF Engineer',
     locationId: 'tehran',
-    bio: 'متخصص عیب‌یابی بردهای اینورتر، نصب و سرویس چیلر و سیستم‌های VRF با ۱۱ سال سابقه اجرایی.',
+    bio: 'متخصص عیب‌یابی بردهای اینورتر، نصب و سرویس چیلر و سیستم‌های VRF با ۱۱ سال سابقه اجرایی. | Inverter PCB diagnostics, chiller & VRF specialist with 11 years of field experience.',
     phone: '09123456789',
     experienceYears: 11,
-    skills: ['کولر گازی اینورتر', 'داکت اسپلیت و VRF', 'تعمیر برد الکترونیکی'],
+    skills: ['کولر گازی اینورتر | Inverter AC', 'داکت اسپلیت و VRF | VRF Systems', 'تعمیر برد الکترونیکی | PCB Diagnostics'],
     createdAt: '2026-01-15T10:00:00Z',
   },
   {
@@ -108,12 +116,15 @@ const DEFAULT_DEMO_USERS = [
       'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=600&q=80',
     cover:
       'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80',
-    title: 'مدیر محصول و کارفرما',
+    title: 'مدیر محصول و کارفرما | Product Manager & Client',
     locationId: 'tehran',
-    bio: 'همکاری مستمر با طراحان، معماران و مهندسان برتر در پلتفرم اوجیفای.',
+    bio: 'همکاری مستمر با طراحان، معماران و مهندسان برتر در پلتفرم اوجیفای. | Collaborating with vetted architects, designers, and engineers on OWJIFY.',
     phone: '09129876543',
     experienceYears: 5,
-    skills: ['مدیریت پروژه', 'سفارش خدمات سازمانی'],
+    skills: [
+      'مدیریت پروژه | Project Management',
+      'سفارش خدمات سازمانی | Enterprise Procurement',
+    ],
     createdAt: '2026-03-10T10:00:00Z',
   },
   {
@@ -130,9 +141,9 @@ const DEFAULT_DEMO_USERS = [
       'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
     cover:
       'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80',
-    title: 'مدیر کلینیک سلامت (کارفرما)',
+    title: 'مدیر کلینیک سلامت (کارفرما) | Healthcare Clinic Manager',
     locationId: 'tehran',
-    bio: 'کارفرمای بخش درمان و کلینیک تخصصی.',
+    bio: 'کارفرمای بخش درمان و کلینیک تخصصی. | Specialized healthcare clinic client.',
     phone: '09124445566',
     experienceYears: 4,
     skills: [],
@@ -152,9 +163,9 @@ const DEFAULT_DEMO_USERS = [
       'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80',
     cover:
       'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80',
-    title: 'کارفرمای مسکونی',
+    title: 'کارفرمای مسکونی | Residential Client',
     locationId: 'isfahan',
-    bio: 'استفاده از خدمات فنی و بازسازی منزل در اوجیفای.',
+    bio: 'استفاده از خدمات فنی و بازسازی منزل در اوجیفای. | Home renovation and technical services client on OWJIFY.',
     phone: '09133334455',
     experienceYears: 2,
     skills: [],
@@ -262,8 +273,8 @@ export const authService = {
         'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80',
       title:
         accountType === 'professional'
-          ? 'متخصص حرفه‌ای در اوجیفای'
-          : 'عضو بازارگاه اوجیفای',
+          ? 'متخصص حرفه‌ای در اوجیفای | OWJIFY Specialist'
+          : 'عضو بازارگاه اوجیفای | OWJIFY Member',
       locationId: 'tehran',
       bio: '',
       phone: '',

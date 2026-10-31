@@ -42,7 +42,7 @@ import { useMarketplace } from '../../context/MarketplaceContext';
 import { formatNumber } from '../../utils/formatters';
 
 export default function Navbar() {
-  const { lang, isRTL, toggleLanguage, ui, l } = useLanguage();
+  const { lang, isRTL, toggleLang, ui, l } = useLanguage();
   const {
     user,
     hasToken,
@@ -58,6 +58,7 @@ export default function Navbar() {
     unreadMessagesCount,
     unreadNotificationsCount,
     openSupportTicketsCount,
+    escalatedTicketsCount,
   } = useMarketplace();
 
   const navigate = useNavigate();
@@ -222,7 +223,9 @@ export default function Navbar() {
               <Box
                 component="button"
                 type="button"
-                onClick={toggleLanguage}
+                onClick={toggleLang}
+                aria-label={lang === 'fa' ? 'Switch to English' : 'Switch to Persian (فارسی)'}
+                title={lang === 'fa' ? 'Switch to English' : 'Switch to Persian (فارسی)'}
                 sx={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -257,20 +260,25 @@ export default function Navbar() {
               {/* Authenticated Actions: strictly gated by valid user token */}
               {hasToken && !isMobile && (
                 <>
-                  {/* Admin CRM Quick Button */}
+                  {/* Admin CRM Quick Button (Exclusive to Admin) */}
                   {isAdmin && (
                     <Link to="/admin" className="owj-btn owj-btn--lime owj-btn--sm">
                       <ShieldCheck size={14} />
-                      <span>{lang === 'fa' ? 'پنل ادمین و CRM' : 'Admin & CRM'}</span>
+                      <span>
+                        {lang === 'fa' ? 'پنل ادمین و CRM' : 'Admin & CRM'}
+                        {escalatedTicketsCount > 0
+                          ? ` (${formatNumber(escalatedTicketsCount, lang)})`
+                          : ''}
+                      </span>
                     </Link>
                   )}
 
-                  {/* Operator Support Console Quick Button */}
+                  {/* Operator Support Console Quick Button (Exclusive to Support Operator) */}
                   {isOperator && (
                     <Link to="/operator" className="owj-btn owj-btn--dark owj-btn--sm">
                       <Headset size={14} color="#C7F36B" />
                       <span>
-                        {lang === 'fa' ? 'پنل اپراتور' : 'Operator'}
+                        {lang === 'fa' ? 'میز پشتیبانی' : 'Support Desk'}
                         {openSupportTicketsCount > 0
                           ? ` (${formatNumber(openSupportTicketsCount, lang)})`
                           : ''}
@@ -410,7 +418,7 @@ export default function Navbar() {
                     >
                       <Avatar
                         src={user.avatar}
-                        alt={user.fullName}
+                        alt={l(user.fullName)}
                         sx={{ width: 27, height: 27 }}
                       />
                       <Box
@@ -424,7 +432,7 @@ export default function Navbar() {
                           fontWeight: 700,
                         }}
                       >
-                        {user.fullName?.split('|')[0]?.trim()}
+                        {l(user.fullName)}
                       </Box>
                       <Chip
                         size="small"
@@ -468,7 +476,7 @@ export default function Navbar() {
                     >
                       <Box sx={{ px: 1.5, py: 0.9 }}>
                         <Box sx={{ fontWeight: 800, fontSize: '0.84rem' }}>
-                          {user.fullName?.split('|')[0]?.trim()}
+                          {l(user.fullName)}
                         </Box>
                         <Box sx={{ fontSize: '0.72rem', color: '#666860' }}>
                           {user.email}
@@ -539,14 +547,27 @@ export default function Navbar() {
                         </MenuItem>
                       )}
 
-                      <MenuItem
-                        component={Link}
-                        to="/support"
-                        sx={{ borderRadius: 2, gap: 1.1, fontSize: '0.83rem', fontWeight: 600 }}
-                      >
-                        <LifeBuoy size={15} />
-                        {lang === 'fa' ? 'پشتیبانی و پیگیری گزارش' : 'Support & Reports'}
-                      </MenuItem>
+                      {(isCustomer || isProfessional) && (
+                        <MenuItem
+                          component={Link}
+                          to="/profile/edit"
+                          sx={{ borderRadius: 2, gap: 1.1, fontSize: '0.83rem', fontWeight: 600 }}
+                        >
+                          <User size={15} />
+                          {lang === 'fa' ? 'ویرایش پروفایل من' : 'Edit My Profile'}
+                        </MenuItem>
+                      )}
+
+                      {!isAdmin && (
+                        <MenuItem
+                          component={Link}
+                          to="/support"
+                          sx={{ borderRadius: 2, gap: 1.1, fontSize: '0.83rem', fontWeight: 600 }}
+                        >
+                          <LifeBuoy size={15} />
+                          {lang === 'fa' ? 'پشتیبانی و پیگیری گزارش' : 'Support & Reports'}
+                        </MenuItem>
+                      )}
 
                       <MenuItem
                         component={Link}
@@ -629,9 +650,19 @@ export default function Navbar() {
               {lang === 'fa' ? 'اوجیفای' : 'OWJIFY'}
             </Box>
           </Stack>
-          <IconButton onClick={() => setMobileOpen(false)} size="small">
-            <X size={19} />
-          </IconButton>
+          <Stack direction="row" spacing={0.6} alignItems="center">
+            <button
+              type="button"
+              onClick={toggleLang}
+              className="owj-btn owj-btn--outline owj-btn--sm"
+            >
+              <Globe size={13} />
+              <span>{lang === 'fa' ? 'English' : 'فارسی'}</span>
+            </button>
+            <IconButton onClick={() => setMobileOpen(false)} size="small">
+              <X size={19} />
+            </IconButton>
+          </Stack>
         </Stack>
 
         {/* TOP OF DRAWER: Auth Buttons OR Logged-in User Card (Never buried at the bottom!) */}
@@ -679,7 +710,7 @@ export default function Navbar() {
               border: '1px solid rgba(17, 18, 15, 0.08)',
             }}
           >
-            <Avatar src={user.avatar} alt={user.fullName} sx={{ width: 38, height: 38 }} />
+            <Avatar src={user.avatar} alt={l(user.fullName)} sx={{ width: 38, height: 38 }} />
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Box
                 sx={{
@@ -690,7 +721,7 @@ export default function Navbar() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {user.fullName?.split('|')[0]?.trim()}
+                {l(user.fullName)}
               </Box>
               <Box sx={{ fontSize: '0.72rem', color: '#666860' }}>{roleBadgeLabel}</Box>
             </Box>

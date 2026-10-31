@@ -1,70 +1,75 @@
 import { STORAGE_KEYS, readStorage, writeStorage, removeStorage } from '../utils/storage';
-import { SEED_PROFESSIONALS } from '../data/professionals';
+import { CATEGORIES } from '../data/categories';
 import { SEED_ADVERTISEMENTS } from '../data/advertisements';
+import { SEED_PROFESSIONALS } from '../data/professionals';
 import { SEED_REVIEWS } from '../data/reviews';
 import { SEED_CONVERSATIONS } from '../data/conversations';
-import { SEED_SKILL_REQUESTS } from '../data/skillRequests';
 import { SEED_NOTIFICATIONS, SEED_INQUIRIES } from '../data/notifications';
 
-function ensureSeeded(key, seedArray) {
-  const stored = readStorage(key, null);
-  if (!stored || !Array.isArray(stored) || stored.length === 0) {
-    writeStorage(key, seedArray);
-    return seedArray;
-  }
-  return stored;
-}
+const DEFAULT_CATEGORIES = CATEGORIES.map((cat) => ({
+  ...cat,
+  active: cat.active !== false,
+}));
 
 export const marketplaceService = {
-  getProfessionals() {
-    return ensureSeeded(STORAGE_KEYS.PROFESSIONALS, SEED_PROFESSIONALS);
+  getCategories() {
+    const saved = readStorage(STORAGE_KEYS.CATEGORIES, null);
+    if (!saved || !Array.isArray(saved) || saved.length === 0) {
+      writeStorage(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
+      return DEFAULT_CATEGORIES;
+    }
+    return saved;
   },
 
-  saveProfessionals(list) {
-    writeStorage(STORAGE_KEYS.PROFESSIONALS, list);
+  saveCategories(list) {
+    writeStorage(STORAGE_KEYS.CATEGORIES, list);
     return list;
   },
 
   getAdvertisements() {
-    return ensureSeeded(STORAGE_KEYS.ADS, SEED_ADVERTISEMENTS);
+    const saved = readStorage(STORAGE_KEYS.ADS, null);
+    if (!saved || !Array.isArray(saved) || saved.length === 0) {
+      writeStorage(STORAGE_KEYS.ADS, SEED_ADVERTISEMENTS);
+      return SEED_ADVERTISEMENTS;
+    }
+    return saved;
   },
 
-  // Alias for getAdvertisements
-  getAds() {
-    return this.getAdvertisements();
+  saveAdvertisements(ads) {
+    writeStorage(STORAGE_KEYS.ADS, ads);
+    return ads;
   },
 
-  saveAdvertisements(list) {
-    writeStorage(STORAGE_KEYS.ADS, list);
-    return list;
+  getProfessionals() {
+    const saved = readStorage(STORAGE_KEYS.PROFESSIONALS, null);
+    if (!saved || !Array.isArray(saved) || saved.length === 0) {
+      writeStorage(STORAGE_KEYS.PROFESSIONALS, SEED_PROFESSIONALS);
+      return SEED_PROFESSIONALS;
+    }
+    return saved;
   },
 
-  getAdDraft() {
-    return readStorage(STORAGE_KEYS.AD_DRAFT, null);
-  },
-
-  saveAdDraft(draft) {
-    writeStorage(STORAGE_KEYS.AD_DRAFT, {
-      ...draft,
-      savedAt: new Date().toISOString(),
-    });
-  },
-
-  clearAdDraft() {
-    removeStorage(STORAGE_KEYS.AD_DRAFT);
+  saveProfessionals(pros) {
+    writeStorage(STORAGE_KEYS.PROFESSIONALS, pros);
+    return pros;
   },
 
   getReviews() {
-    return ensureSeeded(STORAGE_KEYS.REVIEWS, SEED_REVIEWS);
+    const saved = readStorage(STORAGE_KEYS.REVIEWS, null);
+    if (!saved || !Array.isArray(saved) || saved.length === 0) {
+      writeStorage(STORAGE_KEYS.REVIEWS, SEED_REVIEWS);
+      return SEED_REVIEWS;
+    }
+    return saved;
   },
 
-  saveReviews(list) {
-    writeStorage(STORAGE_KEYS.REVIEWS, list);
-    return list;
+  saveReviews(reviews) {
+    writeStorage(STORAGE_KEYS.REVIEWS, reviews);
+    return reviews;
   },
 
   getFavoriteAds() {
-    return readStorage(STORAGE_KEYS.FAVORITE_ADS, ['ad-102', 'ad-103']);
+    return readStorage(STORAGE_KEYS.FAVORITE_ADS, ['ad-1', 'ad-3']);
   },
 
   saveFavoriteAds(ids) {
@@ -82,61 +87,78 @@ export const marketplaceService = {
   },
 
   getConversations() {
-    return ensureSeeded(STORAGE_KEYS.CONVERSATIONS, SEED_CONVERSATIONS);
+    const saved = readStorage(STORAGE_KEYS.CONVERSATIONS, null);
+    if (!saved || !Array.isArray(saved) || saved.length === 0) {
+      writeStorage(STORAGE_KEYS.CONVERSATIONS, SEED_CONVERSATIONS);
+      return SEED_CONVERSATIONS;
+    }
+    return saved;
   },
 
-  saveConversations(list) {
-    writeStorage(STORAGE_KEYS.CONVERSATIONS, list);
-    return list;
-  },
-
-  getSkillRequests() {
-    return ensureSeeded(STORAGE_KEYS.SKILL_REQUESTS, SEED_SKILL_REQUESTS);
-  },
-
-  saveSkillRequests(list) {
-    writeStorage(STORAGE_KEYS.SKILL_REQUESTS, list);
-    return list;
+  saveConversations(convs) {
+    writeStorage(STORAGE_KEYS.CONVERSATIONS, convs);
+    return convs;
   },
 
   getNotifications() {
-    return ensureSeeded(STORAGE_KEYS.NOTIFICATIONS, SEED_NOTIFICATIONS);
+    const saved = readStorage(STORAGE_KEYS.NOTIFICATIONS, null);
+    if (!saved || !Array.isArray(saved) || saved.length === 0) {
+      writeStorage(STORAGE_KEYS.NOTIFICATIONS, SEED_NOTIFICATIONS);
+      return SEED_NOTIFICATIONS;
+    }
+    return saved;
   },
 
-  saveNotifications(list) {
-    writeStorage(STORAGE_KEYS.NOTIFICATIONS, list);
-    return list;
+  saveNotifications(items) {
+    writeStorage(STORAGE_KEYS.NOTIFICATIONS, items);
+    return items;
   },
 
   getInquiries() {
-    return ensureSeeded(STORAGE_KEYS.INQUIRIES, SEED_INQUIRIES);
-  },
-
-  saveInquiries(list) {
-    writeStorage(STORAGE_KEYS.INQUIRIES, list);
-    return list;
-  },
-
-  subscribeNewsletter(email) {
-    const list = readStorage(STORAGE_KEYS.NEWSLETTER, []);
-    if (!list.includes(email)) {
-      list.push(email);
-      writeStorage(STORAGE_KEYS.NEWSLETTER, list);
+    const saved = readStorage(STORAGE_KEYS.INQUIRIES, null);
+    if (!saved || !Array.isArray(saved) || saved.length === 0) {
+      writeStorage(STORAGE_KEYS.INQUIRIES, SEED_INQUIRIES);
+      return SEED_INQUIRIES;
     }
+    return saved;
+  },
+
+  saveInquiries(items) {
+    writeStorage(STORAGE_KEYS.INQUIRIES, items);
+    return items;
+  },
+
+  getReports() {
+    return readStorage(STORAGE_KEYS.REPORTS, []);
+  },
+
+  saveReports(list) {
+    writeStorage(STORAGE_KEYS.REPORTS, list);
     return list;
+  },
+
+  getAdDraft() {
+    return readStorage(STORAGE_KEYS.AD_DRAFT, null);
+  },
+
+  saveAdDraft(draft) {
+    writeStorage(STORAGE_KEYS.AD_DRAFT, draft);
+  },
+
+  clearAdDraft() {
+    removeStorage(STORAGE_KEYS.AD_DRAFT);
   },
 
   submitReport(report) {
     const list = readStorage(STORAGE_KEYS.REPORTS, []);
-    const entry = { id: `rep_${Date.now()}`, ...report, createdAt: new Date().toISOString() };
-    writeStorage(STORAGE_KEYS.REPORTS, [entry, ...list]);
-    return entry;
-  },
-
-  submitContactTicket(ticket) {
-    const list = readStorage(STORAGE_KEYS.CONTACT_TICKETS, []);
-    const entry = { id: `tkt_${Date.now()}`, ...ticket, createdAt: new Date().toISOString() };
-    writeStorage(STORAGE_KEYS.CONTACT_TICKETS, [entry, ...list]);
-    return entry;
+    const item = {
+      id: `rep_${Date.now()}`,
+      status: 'open',
+      ...report,
+      createdAt: new Date().toISOString(),
+    };
+    list.unshift(item);
+    writeStorage(STORAGE_KEYS.REPORTS, list);
+    return item;
   },
 };

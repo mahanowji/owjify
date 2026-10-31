@@ -31,7 +31,7 @@ import { formatRelativeDate } from '../../utils/formatters';
 
 export default function SupportPage() {
   const { lang, l } = useLanguage();
-  const { user, hasToken, isOperator, isAdmin } = useAuth();
+  const { user, hasToken, canAccessOperatorDesk, isAdmin } = useAuth();
   const {
     advertisements,
     supportTickets,
@@ -47,7 +47,7 @@ export default function SupportPage() {
   const [category, setCategory] = useState('report_listing');
   const [priority, setPriority] = useState('normal');
   const [relatedAdId, setRelatedAdId] = useState('');
-  const [guestName, setGuestName] = useState(user?.fullName?.split('|')[0]?.trim() || '');
+  const [guestName, setGuestName] = useState(user ? l(user.fullName) : '');
   const [guestEmail, setGuestEmail] = useState(user?.email || '');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -85,6 +85,13 @@ export default function SupportPage() {
         color: '#1b7a4c',
       };
     }
+    if (status === 'escalated') {
+      return {
+        label: lang === 'fa' ? 'ارجاع به مدیریت ارشد' : 'Escalated to Admin',
+        bg: 'rgba(217,72,72,0.14)',
+        color: '#b83232',
+      };
+    }
     if (status === 'answered') {
       return {
         label: lang === 'fa' ? 'پاسخ اپراتور ثبت شد' : 'Answered by Operator',
@@ -112,7 +119,7 @@ export default function SupportPage() {
     return supportTickets.filter((t) => {
       if (q && t.id.toUpperCase().includes(q)) return true;
       if (hasToken && user) {
-        if (isOperator || isAdmin) return true;
+        if (canAccessOperatorDesk) return true;
         if (t.reporterUserId === user.id) return true;
         if (t.reporterEmail && user.email && t.reporterEmail.toLowerCase() === user.email.toLowerCase()) {
           return true;
@@ -120,7 +127,7 @@ export default function SupportPage() {
       }
       return false;
     });
-  }, [supportTickets, lookupQuery, hasToken, user, isOperator, isAdmin]);
+  }, [supportTickets, lookupQuery, hasToken, user, canAccessOperatorDesk]);
 
   const activeTicket = useMemo(() => {
     if (selectedTicketId) {
@@ -144,7 +151,9 @@ export default function SupportPage() {
     const created = await createSupportTicket({
       category,
       priority,
-      reporterName: hasToken ? user.fullName : guestName.trim() || 'کاربر مهمان',
+      reporterName: hasToken
+        ? user.fullName
+        : guestName.trim() || (lang === 'fa' ? 'کاربر مهمان' : 'Guest User'),
       reporterEmail: hasToken ? user.email : guestEmail.trim(),
       relatedAdId: linkedAd?.id || null,
       relatedAdTitle: linkedAd?.title || null,
@@ -242,18 +251,20 @@ export default function SupportPage() {
             </Box>
 
             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-              <Link to="/operator" className="owj-btn owj-btn--outline-light owj-btn--sm">
-                <Headset size={14} />
-                <span>
-                  {isOperator
-                    ? lang === 'fa'
-                      ? 'ورود به میز کار اپراتور'
-                      : 'Open Operator Desk'
-                    : lang === 'fa'
-                    ? 'پرتال اپراتور پشتیبانی'
-                    : 'Operator Portal'}
-                </span>
-              </Link>
+              {(canAccessOperatorDesk || !hasToken) && (
+                <Link to="/operator" className="owj-btn owj-btn--outline-light owj-btn--sm">
+                  <Headset size={14} />
+                  <span>
+                    {canAccessOperatorDesk
+                      ? lang === 'fa'
+                        ? 'ورود به میز کار اپراتور'
+                        : 'Open Operator Desk'
+                      : lang === 'fa'
+                      ? 'پرتال اپراتور پشتیبانی'
+                      : 'Operator Portal'}
+                  </span>
+                </Link>
+              )}
               <Link to="/faq" className="owj-btn owj-btn--lime owj-btn--sm">
                 <LifeBuoy size={14} />
                 <span>{lang === 'fa' ? 'سوالات متداول' : 'FAQ'}</span>
@@ -625,7 +636,7 @@ export default function SupportPage() {
                                   color: isOperatorReply ? '#C7F36B' : '#464841',
                                 }}
                               >
-                                {m.authorName}
+                                {l(m.authorName)}
                               </Typography>
                             </Stack>
                             <Typography

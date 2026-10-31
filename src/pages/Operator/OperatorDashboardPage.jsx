@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import {
   Container,
   Grid,
@@ -20,29 +20,41 @@ import {
   KeyRound,
   Server,
   ExternalLink,
-  RefreshCw,
   LogOut,
   ShieldCheck,
+  ArrowUpCircle,
 } from 'lucide-react';
 import PageTransition from '../../components/common/PageTransition';
+import SmartImage from '../../components/common/SmartImage';
 import { SUPPORT_API_ENDPOINTS, supportApiService } from '../../services/supportApiService';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useToast } from '../../context/ToastContext';
-import { formatNumber, formatRelativeDate } from '../../utils/formatters';
+import { formatNumber, formatPrice, formatRelativeDate } from '../../utils/formatters';
 
 export default function OperatorDashboardPage() {
   const { lang, l } = useLanguage();
-  const { user, token, hasToken, isOperator, isAdmin, login, logout } = useAuth();
   const {
+    user,
+    token,
+    hasToken,
+    canAccessOperatorDesk,
+    isAdmin,
+    login,
+    logout,
+  } = useAuth();
+  const {
+    advertisements,
+    professionals,
     supportTickets,
     replySupportTicket,
     updateSupportTicketStatus,
+    escalateSupportTicket,
   } = useMarketplace();
   const { showToast } = useToast();
 
-  // Operator API Login Form State (when not yet authenticated as Operator/Admin)
+  // Operator API Login Form State (only shown to unauthenticated Guests)
   const [apiEndpoint, setApiEndpoint] = useState(SUPPORT_API_ENDPOINTS.operatorLogin);
   const [email, setEmail] = useState('operator@owjify.com');
   const [password, setPassword] = useState('Owjify@2026');
@@ -54,7 +66,69 @@ export default function OperatorDashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeId, setActiveId] = useState(supportTickets[0]?.id || null);
   const [replyText, setReplyText] = useState('');
+  const [escalationOpen, setEscalationOpen] = useState(false);
+  const [escalationNote, setEscalationNote] = useState('');
   const [sending, setSending] = useState(false);
+
+  // Filtered Ticket Queue
+  const filteredTickets = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return supportTickets.filter((t) => {
+      if (statusFilter === 'open' && t.status !== 'open' && t.status !== 'in_progress') {
+        return false;
+      }
+      if (statusFilter === 'escalated' && t.status !== 'escalated') {
+        return false;
+      }
+      if (statusFilter === 'reports' && t.category !== 'report_listing') {
+        return false;
+      }
+      if (statusFilter === 'answered' && t.status !== 'answered') {
+        return false;
+      }
+      if (statusFilter === 'resolved' && t.status !== 'resolved') {
+        return false;
+      }
+      if (!q) return true;
+      const hay = `${t.id} ${t.reporterName} ${t.reporterEmail} ${t.subject?.fa || ''} ${
+        t.subject?.en || ''
+      }`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [supportTickets, statusFilter, searchQuery]);
+
+  const activeTicket =
+    filteredTickets.find((t) => t.id === activeId) ||
+    supportTickets.find((t) => t.id === activeId) ||
+    filteredTickets[0] ||
+    null;
+
+  const reportedListing = useMemo(() => {
+    if (!activeTicket?.relatedAdId) return null;
+    return advertisements.find((a) => a.id === activeTicket.relatedAdId) || null;
+  }, [activeTicket, advertisements]);
+
+  const reportedSpecialist = useMemo(() => {
+    if (!reportedListing) return null;
+    return professionals.find((p) => p.id === reportedListing.proId) || null;
+  }, [reportedListing, professionals]);
+
+  const stats = useMemo(() => {
+    const total = supportTickets.length;
+    const open = supportTickets.filter(
+      (t) => t.status === 'open' || t.status === 'in_progress'
+    ).length;
+    const escalated = supportTickets.filter((t) => t.status === 'escalated').length;
+    const answered = supportTickets.filter(
+      (t) => t.status === 'answered' || t.status === 'resolved'
+    ).length;
+    return { total, open, escalated, answered };
+  }, [supportTickets]);
+
+  // Logged-in Customers & Professionals must never access Support Operator Console
+  if (hasToken && !canAccessOperatorDesk) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleOperatorApiLogin = async (e) => {
     e?.preventDefault?.();
@@ -84,7 +158,7 @@ export default function OperatorDashboardPage() {
           lang === 'fa'
             ? 'اتصال به کنسول اپراتور برقرار شد'
             : 'Operator API Session Active',
-        message: res.user.fullName,
+        message: l(res.user.fullName),
         type: 'success',
       });
     } catch {
@@ -98,50 +172,6 @@ export default function OperatorDashboardPage() {
     }
   };
 
-  // Filtered Ticket Queue
-  const filteredTickets = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return supportTickets.filter((t) => {
-      if (statusFilter === 'open' && t.status !== 'open' && t.status !== 'in_progress') {
-        return false;
-      }
-      if (statusFilter === 'reports' && t.category !== 'report_listing') {
-        return false;
-      }
-      if (statusFilter === 'answered' && t.status !== 'answered') {
-        return false;
-      }
-      if (statusFilter === 'resolved' && t.status !== 'resolved') {
-        return false;
-      }
-      if (!q) return true;
-      const hay = `${t.id} ${t.reporterName} ${t.reporterEmail} ${t.subject?.fa || ''} ${
-        t.subject?.en || ''
-      }`.toLowerCase();
-      return hay.includes(q);
-    });
-  }, [supportTickets, statusFilter, searchQuery]);
-
-  const activeTicket =
-    filteredTickets.find((t) => t.id === activeId) ||
-    supportTickets.find((t) => t.id === activeId) ||
-    filteredTickets[0] ||
-    null;
-
-  const stats = useMemo(() => {
-    const total = supportTickets.length;
-    const open = supportTickets.filter(
-      (t) => t.status === 'open' || t.status === 'in_progress'
-    ).length;
-    const urgent = supportTickets.filter(
-      (t) => (t.priority === 'urgent' || t.priority === 'high') && t.status !== 'resolved'
-    ).length;
-    const answered = supportTickets.filter(
-      (t) => t.status === 'answered' || t.status === 'resolved'
-    ).length;
-    return { total, open, urgent, answered };
-  }, [supportTickets]);
-
   const quickTemplates =
     lang === 'fa'
       ? [
@@ -151,7 +181,7 @@ export default function OperatorDashboardPage() {
         ]
       : [
           'Hello! Thank you for reporting this. Our Trust & Safety team reviewed the listing and took action.',
-          'Hi there, we have escalated your request to high priority and are coordinating directly.',
+          'Hi there, we have placed your request under active investigation and are coordinating directly.',
           'Thank you for your patience—this issue has now been verified and resolved.',
         ];
 
@@ -161,7 +191,7 @@ export default function OperatorDashboardPage() {
     await replySupportTicket({
       ticketId: activeTicket.id,
       replyText: replyText.trim(),
-      authorName: user?.fullName || 'Support Operator',
+      authorName: user?.fullName || 'اپراتور پشتیبانی | Support Operator',
       authorRole: isAdmin ? 'admin' : 'operator',
       nextStatus: markResolved ? 'resolved' : 'answered',
     });
@@ -185,8 +215,32 @@ export default function OperatorDashboardPage() {
     });
   };
 
-  // GATE: Dedicated API Operator Login Screen if user is not logged in as operator or admin
-  if (!hasToken || !isOperator) {
+  const handleEscalateSubmit = async (e) => {
+    e.preventDefault();
+    if (!activeTicket || !escalationNote.trim()) return;
+    setSending(true);
+    await escalateSupportTicket({
+      ticketId: activeTicket.id,
+      reason: escalationNote.trim(),
+    });
+    setEscalationNote('');
+    setEscalationOpen(false);
+    setSending(false);
+    showToast({
+      title:
+        lang === 'fa'
+          ? `تیکت ${activeTicket.id} به مدیر ارشد ارجاع شد`
+          : `Ticket ${activeTicket.id} Escalated to Admin`,
+      message:
+        lang === 'fa'
+          ? 'پرونده در صف فوری پنل ادمین قرار گرفت.'
+          : 'Flagged in the Admin Moderation queue.',
+      type: 'info',
+    });
+  };
+
+  // GATE: Dedicated API Operator Login Screen if Guest (not authenticated yet)
+  if (!hasToken) {
     return (
       <PageTransition>
         <Container maxWidth="sm" sx={{ py: { xs: 5, md: 8 } }}>
@@ -229,7 +283,7 @@ export default function OperatorDashboardPage() {
             <Typography sx={{ fontSize: '0.86rem', color: '#464841', mb: 2.2 }}>
               {lang === 'fa'
                 ? 'اپراتورهای پشتیبانی از طریق این درگاه به API تیکت‌ها متصل شده و به گزارش‌ها و درخواست‌های کاربران پاسخ می‌دهند.'
-                : 'Authenticate against the Operator REST API to inspect reports and send official support answers.'}
+                : 'Authenticate against the Operator REST API to inspect reports, respond to tickets, and escalate critical cases.'}
             </Typography>
 
             {authError && (
@@ -380,12 +434,16 @@ export default function OperatorDashboardPage() {
                   label={
                     lang === 'fa'
                       ? 'متصل به سرویس پشتیبانی API'
-                      : 'API Session Connected'
+                      : 'Support Desk Active'
                   }
                   sx={{ bgcolor: '#C7F36B', color: '#11120F', fontWeight: 800, fontSize: '0.7rem' }}
                 />
                 <Typography
-                  sx={{ fontSize: '0.73rem', color: 'rgba(246,245,240,0.65)', fontFamily: 'monospace' }}
+                  sx={{
+                    fontSize: '0.73rem',
+                    color: 'rgba(246,245,240,0.65)',
+                    fontFamily: 'monospace',
+                  }}
                   dir="ltr"
                 >
                   Bearer {token?.slice(0, 18)}...
@@ -393,11 +451,11 @@ export default function OperatorDashboardPage() {
               </Stack>
               <Typography variant="h5" sx={{ fontWeight: 800 }}>
                 {lang === 'fa'
-                  ? 'داشبورد اپراتور پشتیبانی و رسیدگی به گزارش‌ها'
+                  ? 'میز کار اپراتور پشتیبانی و بررسی گزارش‌ها'
                   : 'Support Operator Console'}
               </Typography>
               <Typography sx={{ fontSize: '0.84rem', color: 'rgba(246,245,240,0.72)', mt: 0.3 }}>
-                {user.fullName} ({user.email})
+                {l(user.fullName)} ({user.email})
               </Typography>
             </Box>
 
@@ -433,13 +491,13 @@ export default function OperatorDashboardPage() {
               color: '#11120F',
             },
             {
-              label: lang === 'fa' ? 'در انتظار پاسخ اپراتور' : 'Open / Pending',
+              label: lang === 'fa' ? 'در انتظار پاسخ اپراتور' : 'Open / In Progress',
               val: stats.open,
               color: '#E59934',
             },
             {
-              label: lang === 'fa' ? 'موارد فوری و مهم' : 'High / Urgent',
-              val: stats.urgent,
+              label: lang === 'fa' ? 'ارجاع‌شده به مدیر ارشد' : 'Escalated to Admin',
+              val: stats.escalated,
               color: '#D94848',
             },
             {
@@ -486,6 +544,7 @@ export default function OperatorDashboardPage() {
                   { id: 'all', label: lang === 'fa' ? 'همه' : 'All' },
                   { id: 'open', label: lang === 'fa' ? 'باز' : 'Open' },
                   { id: 'reports', label: lang === 'fa' ? 'گزارش آگهی' : 'Ad Reports' },
+                  { id: 'escalated', label: lang === 'fa' ? 'ارجاع‌شده' : 'Escalated' },
                   { id: 'answered', label: lang === 'fa' ? 'پاسخ‌داده‌شده' : 'Answered' },
                   { id: 'resolved', label: lang === 'fa' ? 'حل‌شده' : 'Resolved' },
                 ].map((f) => (
@@ -538,17 +597,23 @@ export default function OperatorDashboardPage() {
               <Stack spacing={1} sx={{ maxHeight: 520, overflowY: 'auto' }}>
                 {filteredTickets.map((t) => {
                   const selected = activeTicket?.id === t.id;
+                  const isEscalated = t.status === 'escalated';
                   return (
                     <Box
                       key={t.id}
-                      onClick={() => setActiveId(t.id)}
+                      onClick={() => {
+                        setActiveId(t.id);
+                        setEscalationOpen(false);
+                      }}
                       sx={{
                         p: 1.5,
                         borderRadius: 3,
                         cursor: 'pointer',
                         bgcolor: selected ? '#11120F' : '#F6F5F0',
                         color: selected ? '#F6F5F0' : '#11120F',
-                        border: '1px solid rgba(17,18,15,0.08)',
+                        border: isEscalated
+                          ? '1.5px solid #D94848'
+                          : '1px solid rgba(17,18,15,0.08)',
                         transition: 'all 0.18s ease',
                       }}
                     >
@@ -570,19 +635,19 @@ export default function OperatorDashboardPage() {
                         </Typography>
                         <Chip
                           size="small"
-                          label={t.priority.toUpperCase()}
+                          label={isEscalated ? 'ESCALATED' : t.priority.toUpperCase()}
                           sx={{
                             height: 19,
                             fontSize: '0.62rem',
                             fontWeight: 800,
                             bgcolor:
-                              t.priority === 'urgent'
-                                ? 'rgba(217,72,72,0.2)'
+                              isEscalated || t.priority === 'urgent'
+                                ? 'rgba(217,72,72,0.22)'
                                 : selected
                                 ? 'rgba(255,255,255,0.14)'
                                 : 'rgba(17,18,15,0.08)',
                             color:
-                              t.priority === 'urgent'
+                              isEscalated || t.priority === 'urgent'
                                 ? '#ff7b7b'
                                 : selected
                                 ? '#F6F5F0'
@@ -599,7 +664,7 @@ export default function OperatorDashboardPage() {
                           color: selected ? 'rgba(246,245,240,0.68)' : '#666860',
                         }}
                       >
-                        {t.reporterName} • {formatRelativeDate(t.updatedAt, lang)}
+                        {l(t.reporterName)} • {formatRelativeDate(t.updatedAt, lang)}
                       </Typography>
                     </Box>
                   );
@@ -627,14 +692,28 @@ export default function OperatorDashboardPage() {
                   sx={{ mb: 1.5 }}
                 >
                   <Box>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: 0.5 }}>
                       <Chip
                         size="small"
                         label={activeTicket.id}
                         sx={{ bgcolor: '#11120F', color: '#C7F36B', fontWeight: 800 }}
                       />
+                      <Chip
+                        size="small"
+                        label={activeTicket.status.toUpperCase()}
+                        sx={{
+                          fontWeight: 800,
+                          fontSize: '0.66rem',
+                          bgcolor:
+                            activeTicket.status === 'escalated'
+                              ? 'rgba(217,72,72,0.16)'
+                              : 'rgba(17,18,15,0.08)',
+                          color:
+                            activeTicket.status === 'escalated' ? '#b83232' : '#11120F',
+                        }}
+                      />
                       <Typography sx={{ fontSize: '0.78rem', color: '#666860' }}>
-                        {activeTicket.reporterName} ({activeTicket.reporterEmail || 'N/A'})
+                        {l(activeTicket.reporterName)} ({activeTicket.reporterEmail || 'N/A'})
                       </Typography>
                     </Stack>
                     <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.08rem' }}>
@@ -642,7 +721,7 @@ export default function OperatorDashboardPage() {
                     </Typography>
                   </Box>
 
-                  {/* Status Controls via PATCH /api/operator/tickets/:id/status */}
+                  {/* Status & Escalation Controls */}
                   <Stack direction="row" spacing={0.6} alignItems="center" flexWrap="wrap" useFlexGap>
                     <button
                       type="button"
@@ -652,6 +731,16 @@ export default function OperatorDashboardPage() {
                       <Clock size={13} />
                       <span>{lang === 'fa' ? 'در حال بررسی' : 'In Progress'}</span>
                     </button>
+                    {activeTicket.status !== 'escalated' && (
+                      <button
+                        type="button"
+                        onClick={() => setEscalationOpen((p) => !p)}
+                        className="owj-btn owj-btn--danger owj-btn--sm"
+                      >
+                        <ArrowUpCircle size={13} />
+                        <span>{lang === 'fa' ? 'ارجاع به ادمین' : 'Escalate'}</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleStatusChange('resolved')}
@@ -663,30 +752,130 @@ export default function OperatorDashboardPage() {
                   </Stack>
                 </Stack>
 
+                {/* Inline Escalation Composer */}
+                {escalationOpen && (
+                  <Box
+                    component="form"
+                    onSubmit={handleEscalateSubmit}
+                    sx={{
+                      p: 1.6,
+                      mb: 1.8,
+                      borderRadius: 3,
+                      bgcolor: 'rgba(217,72,72,0.08)',
+                      border: '1px solid rgba(217,72,72,0.28)',
+                    }}
+                  >
+                    <Stack direction="row" spacing={0.8} alignItems="center" sx={{ mb: 0.8 }}>
+                      <AlertTriangle size={15} color="#b83232" />
+                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#b83232' }}>
+                        {lang === 'fa'
+                          ? 'ارجاع رسمی پرونده به مدیر ارشد (Admin)'
+                          : 'Escalate Issue to Platform Administrator'}
+                      </Typography>
+                    </Stack>
+                    <input
+                      type="text"
+                      required
+                      value={escalationNote}
+                      onChange={(e) => setEscalationNote(e.target.value)}
+                      placeholder={
+                        lang === 'fa'
+                          ? 'علت ارجاع به ادمین (مثلاً: نیاز به تعلیق آگهی یا بررسی حساب)...'
+                          : 'Reason for escalation (e.g. requires listing suspension or admin action)...'
+                      }
+                      style={{
+                        width: '100%',
+                        padding: '0.62rem 0.85rem',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(217,72,72,0.3)',
+                        background: '#FFFFFF',
+                        fontSize: '0.83rem',
+                        marginBottom: '0.65rem',
+                      }}
+                    />
+                    <Stack direction="row" spacing={0.8} justifyContent="flex-end">
+                      <button
+                        type="button"
+                        onClick={() => setEscalationOpen(false)}
+                        className="owj-btn owj-btn--ghost owj-btn--sm"
+                      >
+                        {lang === 'fa' ? 'انصراف' : 'Cancel'}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={sending || !escalationNote.trim()}
+                        className="owj-btn owj-btn--danger owj-btn--sm"
+                      >
+                        <ArrowUpCircle size={13} />
+                        <span>
+                          {lang === 'fa' ? 'تایید و ارجاع فوری' : 'Confirm Escalation'}
+                        </span>
+                      </button>
+                    </Stack>
+                  </Box>
+                )}
+
+                {/* Rich Reported Content Card */}
                 {activeTicket.relatedAdId && (
                   <Box
                     sx={{
-                      p: 1.2,
+                      p: 1.4,
                       mb: 1.6,
-                      borderRadius: 2.5,
+                      borderRadius: 3,
                       bgcolor: 'rgba(199,243,107,0.22)',
+                      border: '1px solid rgba(17,18,15,0.1)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       flexWrap: 'wrap',
-                      gap: 1,
+                      gap: 1.5,
                     }}
                   >
-                    <Typography sx={{ fontSize: '0.8rem', fontWeight: 700 }}>
-                      {lang === 'fa' ? 'آگهی هدف گزارش: ' : 'Reported Listing: '}
-                      {l(activeTicket.relatedAdTitle)}
-                    </Typography>
+                    <Stack direction="row" spacing={1.4} alignItems="center">
+                      {reportedListing?.images?.[0] && (
+                        <Box
+                          sx={{
+                            width: 52,
+                            height: 52,
+                            borderRadius: 2,
+                            overflow: 'hidden',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <SmartImage
+                            src={reportedListing.images[0]}
+                            alt={l(reportedListing.title)}
+                          />
+                        </Box>
+                      )}
+                      <Box>
+                        <Typography sx={{ fontSize: '0.73rem', fontWeight: 800, color: '#464841' }}>
+                          {lang === 'fa' ? 'محتوای گزارش‌شده' : 'Reported Content Target'}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
+                          {l(reportedListing?.title || activeTicket.relatedAdTitle)}
+                        </Typography>
+                        {reportedListing && (
+                          <Typography sx={{ fontSize: '0.75rem', color: '#464841' }}>
+                            {reportedSpecialist ? `${l(reportedSpecialist.name)} • ` : ''}
+                            {formatPrice(reportedListing, lang)} •{' '}
+                            {reportedListing.status === 'paused'
+                              ? lang === 'fa'
+                                ? 'متوقف‌شده'
+                                : 'Paused'
+                              : lang === 'fa'
+                              ? 'فعال'
+                              : 'Active'}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Stack>
                     <Link
                       to={`/services/${activeTicket.relatedAdId}`}
                       className="owj-btn owj-btn--dark owj-btn--sm"
                     >
                       <ExternalLink size={13} />
-                      <span>{lang === 'fa' ? 'بررسی آگهی' : 'Inspect Ad'}</span>
+                      <span>{lang === 'fa' ? 'بررسی آگهی' : 'Inspect Listing'}</span>
                     </Link>
                   </Box>
                 )}
@@ -703,8 +892,19 @@ export default function OperatorDashboardPage() {
                         sx={{
                           p: 1.6,
                           borderRadius: 3,
-                          bgcolor: isOp ? '#11120F' : '#F6F5F0',
-                          color: isOp ? '#F6F5F0' : '#11120F',
+                          bgcolor: m.isEscalationNote
+                            ? 'rgba(217,72,72,0.1)'
+                            : isOp
+                            ? '#11120F'
+                            : '#F6F5F0',
+                          color: m.isEscalationNote
+                            ? '#8f2222'
+                            : isOp
+                            ? '#F6F5F0'
+                            : '#11120F',
+                          border: m.isEscalationNote
+                            ? '1px solid rgba(217,72,72,0.28)'
+                            : 'none',
                         }}
                       >
                         <Stack
@@ -717,15 +917,21 @@ export default function OperatorDashboardPage() {
                             sx={{
                               fontSize: '0.75rem',
                               fontWeight: 800,
-                              color: isOp ? '#C7F36B' : '#464841',
+                              color: m.isEscalationNote
+                                ? '#b83232'
+                                : isOp
+                                ? '#C7F36B'
+                                : '#464841',
                             }}
                           >
-                            {m.authorName}
+                            {l(m.authorName)}
                           </Typography>
                           <Typography
                             sx={{
                               fontSize: '0.68rem',
-                              color: isOp ? 'rgba(246,245,240,0.6)' : '#8B8D83',
+                              color: isOp && !m.isEscalationNote
+                                ? 'rgba(246,245,240,0.6)'
+                                : '#8B8D83',
                             }}
                           >
                             {formatRelativeDate(m.createdAt, lang)}
@@ -769,8 +975,8 @@ export default function OperatorDashboardPage() {
                   onChange={(e) => setReplyText(e.target.value)}
                   placeholder={
                     lang === 'fa'
-                      ? 'پاسخ رسمی اپراتور پشتیبانی را بنویسید (ارسال از طریق POST /api/operator/tickets/:id/reply)...'
-                      : 'Write official operator answer (dispatched via POST /api/operator/tickets/:id/reply)...'
+                      ? 'پاسخ رسمی اپراتور پشتیبانی را بنویسید...'
+                      : 'Write official operator answer...'
                   }
                   style={{
                     width: '100%',

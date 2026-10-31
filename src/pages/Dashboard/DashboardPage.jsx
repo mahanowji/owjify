@@ -4,13 +4,9 @@ import { Container, Grid, Stack, Tabs, Tab, Box, Chip } from '@mui/material';
 import {
   LayoutDashboard,
   Layers,
-  Inbox,
-  Clock,
-  Briefcase,
   Heart,
   Star,
   Plus,
-  Sparkles,
   Compass,
   Eye,
   MessageSquare,
@@ -19,8 +15,6 @@ import {
   PlayCircle,
   Trash2,
   UserCog,
-  Settings,
-  Bell,
   Send,
   ArrowUpRight,
   ArrowDownLeft,
@@ -31,7 +25,6 @@ import StatCard from '../../components/dashboard/StatCard';
 import ServiceCard from '../../components/marketplace/ServiceCard';
 import ProfessionalCard from '../../components/profile/ProfessionalCard';
 import Modal from '../../components/common/Modal';
-import { getCategoryById } from '../../data/categories';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
@@ -49,42 +42,27 @@ export default function DashboardPage() {
     favoriteAds,
     favoritePros,
     conversations,
-    skillRequests,
-    openSkillRequestModal,
-    inquiries,
     unreadMessagesCount,
     toggleAdvertisementStatus,
     deleteAdvertisement,
-    updateInquiryStatus,
-    updateProfessionalAvailability,
-    addPortfolioProject,
-    deletePortfolioProject,
     replyToReview,
   } = useMarketplace();
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Simplified, Focused Role Tabs
   const providerTabs = [
-    { id: 'overview', icon: LayoutDashboard, fa: 'نمای کلی پنل متخصص', en: 'Provider Overview' },
-    { id: 'ads', icon: Layers, fa: 'آگهی‌های خدمات من', en: 'My Advertisements' },
-    { id: 'inquiries', icon: Inbox, fa: 'پیام‌ها و درخواست‌های مشتریان', en: 'Customer Inquiries' },
-    { id: 'skill-requests', icon: Sparkles, fa: 'درخواست‌های مهارت من', en: 'Skill Requests' },
-    { id: 'availability', icon: Clock, fa: 'مدیریت زمان حضور', en: 'Availability' },
-    { id: 'portfolio', icon: Briefcase, fa: 'مدیریت پورتفولیو', en: 'Portfolio' },
-    { id: 'favorites', icon: Heart, fa: 'ذخیره‌شده‌ها', en: 'Saved Items' },
-    { id: 'reviews', icon: Star, fa: 'دیدگاه‌های مشتریان', en: 'Client Reviews' },
+    { id: 'overview', icon: LayoutDashboard, fa: 'نمای کلی', en: 'Overview' },
+    { id: 'ads', icon: Layers, fa: 'آگهی‌های من', en: 'My Listings' },
+    { id: 'reviews', icon: Star, fa: 'دیدگاه‌ها', en: 'Reviews' },
+    { id: 'favorites', icon: Heart, fa: 'ذخیره‌شده‌ها', en: 'Saved' },
   ];
 
   const customerTabs = [
     { id: 'overview', icon: LayoutDashboard, fa: 'نمای کلی کارفرما', en: 'Customer Overview' },
-    {
-      id: 'sent-messages',
-      icon: Send,
-      fa: 'پیام‌های ارسالی به متخصصان',
-      en: 'Sent to Providers',
-    },
-    { id: 'favorites', icon: Heart, fa: 'خدمات و متخصصان ذخیره‌شده', en: 'Saved Favorites' },
-    { id: 'my-reviews', icon: Star, fa: 'دیدگاه‌های ثبت‌شده من', en: 'My Reviews' },
+    { id: 'sent-messages', icon: Send, fa: 'پیام‌های ارسالی من', en: 'My Messages' },
+    { id: 'favorites', icon: Heart, fa: 'ذخیره‌شده‌ها', en: 'Saved' },
+    { id: 'my-reviews', icon: Star, fa: 'دیدگاه‌های من', en: 'My Reviews' },
   ];
 
   const navItems = isProfessional ? providerTabs : customerTabs;
@@ -94,12 +72,6 @@ export default function DashboardPage() {
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [replyTexts, setReplyTexts] = useState({});
-  const [pfTitle, setPfTitle] = useState('');
-  const [pfYear, setPfYear] = useState('2026');
-  const [pfSummary, setPfSummary] = useState('');
-  const [pfImage, setPfImage] = useState(
-    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=80'
-  );
 
   const proId = user?.proId || 'pro-1';
   const currentPro = useMemo(
@@ -117,7 +89,7 @@ export default function DashboardPage() {
     [advertisements, user, isProfessional]
   );
 
-  const receivedCustomerConvs = useMemo(
+  const receivedConvs = useMemo(
     () => conversations.filter((c) => c.direction === 'received'),
     [conversations]
   );
@@ -128,10 +100,10 @@ export default function DashboardPage() {
   );
 
   const activeAdsCount = myAds.filter((a) => a.status === 'active').length;
-  const totalViews = myAds.reduce((sum, a) => sum + Number(a.views || 120), 0) + 420;
   const savedAdObjects = advertisements.filter((a) => favoriteAds.includes(a.id));
   const savedProObjects = professionals.filter((p) => favoritePros.includes(p.id));
   const myProReviews = reviews.filter((r) => r.proId === proId);
+
   const customerWrittenReviews = useMemo(() => {
     const cleanFirst = (user?.fullName || '').split('|')[0].trim();
     return reviews.filter(
@@ -141,70 +113,34 @@ export default function DashboardPage() {
     );
   }, [reviews, user]);
 
-  const [availHours, setAvailHours] = useState(
-    currentPro?.availability?.hours || '08:30 - 21:00'
-  );
-  const [availNow, setAvailNow] = useState(Boolean(currentPro?.availableNow));
-  const [availUrgent, setAvailUrgent] = useState(Boolean(currentPro?.availability?.urgent));
-
-  const handleSaveAvailability = (e) => {
-    e.preventDefault();
-    updateProfessionalAvailability(currentPro.id, {
-      availableNow: availNow,
-      hours: availHours,
-      urgent: availUrgent,
-    });
+  const handleConfirmDeleteAd = () => {
+    if (!deleteTarget) return;
+    deleteAdvertisement(deleteTarget.id);
+    setDeleteTarget(null);
     showToast({
-      title: lang === 'fa' ? 'برنامه زمانی به‌روز شد' : 'Availability Updated',
-      type: 'success',
+      title: lang === 'fa' ? 'آگهی حذف شد' : 'Listing Deleted',
+      type: 'info',
     });
   };
-
-  const handleAddPortfolio = (e) => {
-    e.preventDefault();
-    if (!pfTitle.trim()) return;
-    addPortfolioProject(currentPro.id, {
-      title: pfTitle.trim(),
-      year: pfYear,
-      summary: pfSummary.trim(),
-      image: pfImage,
-    });
-    setPfTitle('');
-    setPfSummary('');
-    showToast({
-      title: lang === 'fa' ? 'نمونه کار به پورتفولیو اضافه شد' : 'Portfolio Project Added',
-      type: 'success',
-    });
-  };
-
-  const weeklyChart = [
-    { day: { fa: 'ش', en: 'Sat' }, pct: 58 },
-    { day: { fa: 'ی', en: 'Sun' }, pct: 74 },
-    { day: { fa: 'د', en: 'Mon' }, pct: 66 },
-    { day: { fa: 'س', en: 'Tue' }, pct: 92 },
-    { day: { fa: 'چ', en: 'Wed' }, pct: 84 },
-    { day: { fa: 'پ', en: 'Thu' }, pct: 78 },
-    { day: { fa: 'ج', en: 'Fri' }, pct: 49 },
-  ];
 
   return (
     <PageTransition>
       <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4.5 }, pb: { xs: 6, md: 9 } }}>
-        {/* Role-Differentiated Top Banner */}
+        {/* Clean Role Header */}
         <div className={styles.banner}>
           <div className={styles.userRow}>
             <div className={styles.avatar}>
-              <SmartImage src={user?.avatar} alt={user?.fullName} />
+              <SmartImage src={user?.avatar} alt={l(user?.fullName)} />
             </div>
             <div>
               <h1 style={{ fontSize: 'clamp(1.2rem, 2.2vw, 1.45rem)', fontWeight: 900 }}>
-                {user?.fullName}
+                {l(user?.fullName)}
               </h1>
               <span className={styles.rolePill}>
                 {isProfessional
                   ? lang === 'fa'
-                    ? 'حساب ارائه‌دهنده خدمت (متخصص تاییدشده)'
-                    : 'Verified Service Provider Account'
+                    ? 'حساب متخصص'
+                    : 'Specialist Account'
                   : lang === 'fa'
                   ? 'حساب کارفرما / مشتری'
                   : 'Customer Account'}
@@ -217,19 +153,23 @@ export default function DashboardPage() {
               <>
                 <Link to="/create-ad" className="owj-btn owj-btn--lime owj-btn--sm">
                   <Plus size={15} />
-                  <span>{lang === 'fa' ? 'ثبت آگهی جدید' : 'Create Advertisement'}</span>
+                  <span>{lang === 'fa' ? 'ثبت آگهی جدید' : 'Post New Ad'}</span>
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => openSkillRequestModal()}
-                  className="owj-btn owj-btn--outline-light owj-btn--sm"
-                >
-                  <Sparkles size={15} color="#C7F36B" />
-                  <span>{lang === 'fa' ? 'درخواست مهارت' : 'Request a Skill'}</span>
-                </button>
+                <Link to="/messages" className="owj-btn owj-btn--outline-light owj-btn--sm">
+                  <MessageSquare size={15} />
+                  <span>
+                    {lang === 'fa' ? 'پیام‌ها' : 'Messages'}
+                    {unreadMessagesCount > 0
+                      ? ` (${formatNumber(unreadMessagesCount, lang)})`
+                      : ''}
+                  </span>
+                </Link>
+                <Link to="/explore" className="owj-btn owj-btn--outline-light owj-btn--sm">
+                  <Compass size={15} />
+                  <span>{lang === 'fa' ? 'مشاهده آگهی‌ها' : 'Browse Ads'}</span>
+                </Link>
               </>
             ) : (
-              /* Customer Role Actions: NO Create Advertisement! */
               <>
                 <Link to="/explore" className="owj-btn owj-btn--lime owj-btn--sm">
                   <Compass size={15} />
@@ -237,9 +177,7 @@ export default function DashboardPage() {
                 </Link>
                 <Link to="/messages" className="owj-btn owj-btn--outline-light owj-btn--sm">
                   <Send size={15} />
-                  <span>
-                    {lang === 'fa' ? 'پیام‌های ارسالی من' : 'My Sent Messages'}
-                  </span>
+                  <span>{lang === 'fa' ? 'پیام‌های من' : 'My Messages'}</span>
                 </Link>
               </>
             )}
@@ -248,14 +186,10 @@ export default function DashboardPage() {
               <UserCog size={15} />
               <span>{lang === 'fa' ? 'ویرایش پروفایل' : 'Edit Profile'}</span>
             </Link>
-            <Link to="/settings" className="owj-btn owj-btn--outline-light owj-btn--sm">
-              <Settings size={15} />
-              <span>{lang === 'fa' ? 'تنظیمات' : 'Settings'}</span>
-            </Link>
           </Stack>
         </div>
 
-        {/* Mobile / Tablet Scrollable MUI Tabs */}
+        {/* Mobile / Tablet Scrollable Tabs */}
         <Box
           sx={{
             display: { xs: 'block', lg: 'none' },
@@ -292,7 +226,7 @@ export default function DashboardPage() {
 
         <Grid container spacing={{ xs: 3, lg: 3.5 }} alignItems="flex-start">
           {/* Desktop Sticky Sidebar */}
-          <Grid size={{ lg: 3 }} sx={{ display: { xs: 'none', lg: 'block' } }}>
+          <Grid size={{ lg: 2.8 }} sx={{ display: { xs: 'none', lg: 'block' } }}>
             <nav className={styles.sideNav} aria-label="Dashboard Navigation">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -308,216 +242,568 @@ export default function DashboardPage() {
                   </button>
                 );
               })}
+
+              <hr
+                style={{
+                  border: 'none',
+                  borderTop: '1px solid rgba(17,18,15,0.08)',
+                  margin: '0.5rem 0',
+                }}
+              />
+
               <Link to="/messages" className={styles.sideBtn}>
                 <MessageSquare size={17} />
-                <span>
-                  {isProfessional
-                    ? lang === 'fa'
-                      ? 'صندوق پیام‌ها (دریافتی و ارسالی)'
-                      : 'Messenger (Inbox & Sent)'
-                    : lang === 'fa'
-                    ? 'پیام‌های ارسالی من'
-                    : 'Messages Sent to Providers'}
-                </span>
+                <span>{lang === 'fa' ? 'صندوق پیام‌ها' : 'Messages'}</span>
               </Link>
-              <Link to="/notifications" className={styles.sideBtn}>
-                <Bell size={17} />
-                <span>{lang === 'fa' ? 'مرکز اعلان‌ها' : 'Notifications'}</span>
-              </Link>
+              {isProfessional && currentPro && (
+                <Link to={`/professionals/${currentPro.id}`} className={styles.sideBtn}>
+                  <Eye size={17} />
+                  <span>{lang === 'fa' ? 'پروفایل عمومی من' : 'My Public Profile'}</span>
+                </Link>
+              )}
             </nav>
           </Grid>
 
-          {/* Main Dashboard View */}
-          <Grid size={{ xs: 12, lg: 9 }}>
-            {/* ROLE-SPECIFIC KPI STATS */}
-            {isProfessional ? (
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-                  <StatCard
-                    accent
-                    label={lang === 'fa' ? 'آگهی‌های فعال من' : 'Active Advertisements'}
-                    value={activeAdsCount}
-                    icon={Layers}
-                    trend={lang === 'fa' ? 'در حال نمایش در بازارگاه' : 'Live in Explore'}
-                  />
+          {/* Main Workspace Column */}
+          <Grid size={{ xs: 12, lg: 9.2 }}>
+            {/* Compact KPI Strip */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              {isProfessional ? (
+                <>
+                  <Grid size={{ xs: 6, md: 3 }}>
+                    <StatCard
+                      icon={Layers}
+                      value={activeAdsCount}
+                      label={lang === 'fa' ? 'آگهی‌های فعال من' : 'My Active Ads'}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, md: 3 }}>
+                    <StatCard
+                      icon={ArrowDownLeft}
+                      value={receivedConvs.length}
+                      label={lang === 'fa' ? 'پیام‌های دریافتی من' : 'Received Inquiries'}
+                      accent
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, md: 3 }}>
+                    <StatCard
+                      icon={ArrowUpRight}
+                      value={sentConvs.length}
+                      label={lang === 'fa' ? 'ارسالی به متخصصان' : 'Sent to Specialists'}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, md: 3 }}>
+                    <StatCard
+                      icon={Star}
+                      value={currentPro?.rating || '4.9'}
+                      label={lang === 'fa' ? 'امتیاز من' : 'Rating'}
+                    />
+                  </Grid>
+                </>
+              ) : (
+                <>
+                  <Grid size={{ xs: 6, md: 3 }}>
+                    <StatCard
+                      icon={Send}
+                      value={sentConvs.length}
+                      label={lang === 'fa' ? 'پیام‌های ارسالی' : 'Messages Sent'}
+                      accent
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, md: 3 }}>
+                    <StatCard
+                      icon={Heart}
+                      value={savedAdObjects.length}
+                      label={lang === 'fa' ? 'آگهی‌های ذخیره‌شده' : 'Saved Services'}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, md: 3 }}>
+                    <StatCard
+                      icon={Compass}
+                      value={savedProObjects.length}
+                      label={lang === 'fa' ? 'متخصصان منتخب' : 'Saved Specialists'}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, md: 3 }}>
+                    <StatCard
+                      icon={Star}
+                      value={customerWrittenReviews.length}
+                      label={lang === 'fa' ? 'دیدگاه‌های من' : 'My Reviews'}
+                    />
+                  </Grid>
+                </>
+              )}
+            </Grid>
+
+            {/* =================================================================
+                SPECIALIST OVERVIEW: Simple Two-Column Messages + My Ads Preview
+            ================================================================= */}
+            {isProfessional && activeTab === 'overview' && (
+              <>
+                <Grid container spacing={2.5} sx={{ mb: 0.5 }}>
+                  {/* 1) Incoming Inquiries to this Specialist */}
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <div className={styles.panel} style={{ height: '100%' }}>
+                      <div className={styles.panelHead}>
+                        <h3 style={{ fontSize: '0.98rem', fontWeight: 800 }}>
+                          {lang === 'fa'
+                            ? 'پیام‌های دریافتی متخصص'
+                            : 'Received Inquiries'}
+                        </h3>
+                        <Link
+                          to="/messages?box=received"
+                          className="owj-btn owj-btn--ghost owj-btn--sm"
+                        >
+                          {lang === 'fa' ? 'مشاهده همه' : 'View All'}
+                        </Link>
+                      </div>
+
+                      {receivedConvs.length === 0 ? (
+                        <p style={{ fontSize: '0.86rem', color: '#666860' }}>
+                          {lang === 'fa'
+                            ? 'هنوز پیام دریافتی جدیدی ثبت نشده است.'
+                            : 'No incoming inquiries yet.'}
+                        </p>
+                      ) : (
+                        receivedConvs.slice(0, 3).map((conv) => (
+                          <div key={conv.id} className={styles.adRow}>
+                            <div>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                  fontWeight: 800,
+                                }}
+                              >
+                                <ArrowDownLeft size={14} color="#289e67" />
+                                <span>{l(conv.participantName)}</span>
+                              </div>
+                              <div style={{ fontSize: '0.78rem', color: '#666860' }}>
+                                {l(conv.serviceTitle)}
+                              </div>
+                            </div>
+                            <Link
+                              to={`/messages?box=received&conv=${conv.id}`}
+                              className="owj-btn owj-btn--outline owj-btn--sm"
+                            >
+                              {lang === 'fa' ? 'پاسخ' : 'Reply'}
+                            </Link>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </Grid>
+
+                  {/* 2) Outgoing Requests Sent by this Specialist to Other Specialists */}
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <div className={styles.panel} style={{ height: '100%' }}>
+                      <div className={styles.panelHead}>
+                        <h3 style={{ fontSize: '0.98rem', fontWeight: 800 }}>
+                          {lang === 'fa'
+                            ? 'درخواست‌های من به سایر متخصصان'
+                            : 'Requests to Other Specialists'}
+                        </h3>
+                        <Link
+                          to="/messages?box=sent"
+                          className="owj-btn owj-btn--ghost owj-btn--sm"
+                        >
+                          {lang === 'fa' ? 'مشاهده همه' : 'View All'}
+                        </Link>
+                      </div>
+
+                      {sentConvs.length === 0 ? (
+                        <p style={{ fontSize: '0.86rem', color: '#666860' }}>
+                          {lang === 'fa'
+                            ? 'می‌توانید در صفحه هر آگهی مستقیماً با متخصص مربوطه ارتباط بگیرید.'
+                            : 'Open any listing to connect directly with another specialist.'}
+                        </p>
+                      ) : (
+                        sentConvs.slice(0, 3).map((conv) => (
+                          <div key={conv.id} className={styles.adRow}>
+                            <div>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                  fontWeight: 800,
+                                }}
+                              >
+                                <ArrowUpRight size={14} />
+                                <span>{l(conv.participantName)}</span>
+                              </div>
+                              <div style={{ fontSize: '0.78rem', color: '#666860' }}>
+                                {l(conv.serviceTitle)}
+                              </div>
+                            </div>
+                            <Link
+                              to={`/messages?box=sent&conv=${conv.id}`}
+                              className="owj-btn owj-btn--outline owj-btn--sm"
+                            >
+                              {lang === 'fa' ? 'گفتگو' : 'Open'}
+                            </Link>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </Grid>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-                  <StatCard
-                    label={
-                      lang === 'fa'
-                        ? 'پیام‌های دریافتی از مشتریان'
-                        : 'Messages from Customers'
-                    }
-                    value={receivedCustomerConvs.length}
-                    icon={Inbox}
-                    trend={lang === 'fa' ? 'صندوق دریافتی' : 'Customer Inbox'}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-                  <StatCard
-                    label={
-                      lang === 'fa'
-                        ? 'پیام‌ها و درخواست‌های مهارت ارسالی'
-                        : 'Sent & Skill Requests'
-                    }
-                    value={sentConvs.length + skillRequests.length}
-                    icon={Sparkles}
-                    trend={lang === 'fa' ? 'همکاری تخصصی' : 'Provider Network'}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-                  <StatCard
-                    label={lang === 'fa' ? 'بازدید پروفایل و خدمات' : 'Profile & Listing Views'}
-                    value={totalViews}
-                    icon={Eye}
-                    trend="+24%"
-                  />
-                </Grid>
-              </Grid>
-            ) : (
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-                  <StatCard
-                    accent
-                    label={
-                      lang === 'fa'
-                        ? 'پیام‌های ارسالی به متخصصان'
-                        : 'Sent to Providers'
-                    }
-                    value={sentConvs.length}
-                    icon={Send}
-                    trend={lang === 'fa' ? 'گفتگوهای فعال' : 'Active Threads'}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-                  <StatCard
-                    label={
-                      lang === 'fa'
-                        ? 'پاسخ‌های خوانده‌نشده متخصصان'
-                        : 'Unread Provider Replies'
-                    }
-                    value={unreadMessagesCount}
-                    icon={MessageSquare}
-                    trend={lang === 'fa' ? 'آماده بررسی' : 'Ready to read'}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-                  <StatCard
-                    label={lang === 'fa' ? 'خدمات ذخیره‌شده' : 'Saved Services'}
-                    value={savedAdObjects.length}
-                    icon={Heart}
-                    trend={lang === 'fa' ? 'علاقه‌مندی‌ها' : 'Bookmarked'}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-                  <StatCard
-                    label={lang === 'fa' ? 'متخصصان ذخیره‌شده' : 'Saved Providers'}
-                    value={savedProObjects.length}
-                    icon={Star}
-                    trend={lang === 'fa' ? 'منتخب شما' : 'Shortlisted'}
-                  />
-                </Grid>
-              </Grid>
+
+                {/* Quick Summary of My Listings */}
+                <div className={styles.panel} style={{ marginTop: '1.5rem' }}>
+                  <div className={styles.panelHead}>
+                    <h2 style={{ fontSize: '1.05rem', fontWeight: 800 }}>
+                      {lang === 'fa' ? 'آگهی‌های اخیر من' : 'My Recent Listings'}
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => setTab('ads')}
+                      className="owj-btn owj-btn--outline owj-btn--sm"
+                    >
+                      {lang === 'fa' ? 'مدیریت همه آگهی‌ها' : 'Manage Listings'}
+                    </button>
+                  </div>
+
+                  {myAds.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '1.5rem 1rem', color: '#666860' }}>
+                      <p style={{ marginBottom: '0.85rem' }}>
+                        {lang === 'fa'
+                          ? 'هنوز آگهی خدمتی ثبت نکرده‌اید.'
+                          : 'You have not posted any listings yet.'}
+                      </p>
+                      <Link to="/create-ad" className="owj-btn owj-btn--lime owj-btn--sm">
+                        <Plus size={14} />
+                        <span>{lang === 'fa' ? 'ثبت اولین آگهی' : 'Post First Ad'}</span>
+                      </Link>
+                    </div>
+                  ) : (
+                    myAds.slice(0, 3).map((ad) => (
+                      <div key={ad.id} className={styles.adRow}>
+                        <div className={styles.adInfo}>
+                          <div className={styles.adThumb}>
+                            <SmartImage src={ad.images?.[0]} alt={l(ad.title)} />
+                          </div>
+                          <div>
+                            <Link to={`/services/${ad.id}`} style={{ fontWeight: 800 }}>
+                              {l(ad.title)}
+                            </Link>
+                            <div className={styles.adMeta}>
+                              <span>{formatPrice(ad, lang)}</span>
+                              <span
+                                className={`${styles.statusBadge} ${
+                                  ad.status === 'active'
+                                    ? styles.activeStatus
+                                    : styles.pausedStatus
+                                }`}
+                              >
+                                {ad.status === 'active'
+                                  ? lang === 'fa'
+                                    ? 'فعال'
+                                    : 'Active'
+                                  : lang === 'fa'
+                                  ? 'متوقف'
+                                  : 'Paused'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Link
+                          to={`/edit-ad/${ad.id}`}
+                          className="owj-btn owj-btn--outline owj-btn--sm"
+                        >
+                          <Edit3 size={14} />
+                          <span>{lang === 'fa' ? 'ویرایش' : 'Edit'}</span>
+                        </Link>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </>
             )}
 
             {/* =================================================================
-                CUSTOMER DASHBOARD TABS (!isProfessional)
+                SPECIALIST TAB: MY LISTINGS
+            ================================================================= */}
+            {isProfessional && activeTab === 'ads' && (
+              <div className={styles.panel}>
+                <div className={styles.panelHead}>
+                  <h2 style={{ fontSize: '1.12rem', fontWeight: 800 }}>
+                    {lang === 'fa' ? 'آگهی‌های من' : 'My Listings'}
+                  </h2>
+                  <Link to="/create-ad" className="owj-btn owj-btn--lime owj-btn--sm">
+                    <Plus size={15} />
+                    <span>{lang === 'fa' ? 'ثبت آگهی جدید' : 'Post New Ad'}</span>
+                  </Link>
+                </div>
+
+                {myAds.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#666860' }}>
+                    <p style={{ marginBottom: '1rem' }}>
+                      {lang === 'fa'
+                        ? 'هنوز آگهی خدمتی منتشر نکرده‌اید.'
+                        : 'You have not published any service listings yet.'}
+                    </p>
+                    <Link to="/create-ad" className="owj-btn owj-btn--lime owj-btn--sm">
+                      <Plus size={14} />
+                      <span>{lang === 'fa' ? 'ثبت اولین آگهی' : 'Post First Ad'}</span>
+                    </Link>
+                  </div>
+                ) : (
+                  myAds.map((ad) => (
+                    <div key={ad.id} className={styles.adRow}>
+                      <div className={styles.adInfo}>
+                        <div className={styles.adThumb}>
+                          <SmartImage src={ad.images?.[0]} alt={l(ad.title)} />
+                        </div>
+                        <div>
+                          <Link to={`/services/${ad.id}`} style={{ fontWeight: 800 }}>
+                            {l(ad.title)}
+                          </Link>
+                          <div className={styles.adMeta}>
+                            <span>{formatPrice(ad, lang)}</span>
+                            <span
+                              className={`${styles.statusBadge} ${
+                                ad.status === 'active'
+                                  ? styles.activeStatus
+                                  : styles.pausedStatus
+                              }`}
+                            >
+                              {ad.status === 'active'
+                                ? lang === 'fa'
+                                  ? 'فعال'
+                                  : 'Active'
+                                : lang === 'fa'
+                                ? 'متوقف'
+                                : 'Paused'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <Link
+                          to={`/edit-ad/${ad.id}`}
+                          className="owj-btn owj-btn--outline owj-btn--sm"
+                        >
+                          <Edit3 size={14} />
+                          <span>{lang === 'fa' ? 'ویرایش' : 'Edit'}</span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => toggleAdvertisementStatus(ad.id)}
+                          className="owj-btn owj-btn--outline owj-btn--sm"
+                        >
+                          {ad.status === 'active' ? (
+                            <PauseCircle size={14} />
+                          ) : (
+                            <PlayCircle size={14} />
+                          )}
+                          <span>
+                            {ad.status === 'active'
+                              ? lang === 'fa'
+                                ? 'توقف'
+                                : 'Pause'
+                              : lang === 'fa'
+                              ? 'فعال‌سازی'
+                              : 'Activate'}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(ad)}
+                          className="owj-btn owj-btn--danger owj-btn--sm"
+                          aria-label="Delete listing"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* =================================================================
+                SPECIALIST TAB: CLIENT REVIEWS
+            ================================================================= */}
+            {isProfessional && activeTab === 'reviews' && (
+              <div className={styles.panel}>
+                <h2 style={{ fontSize: '1.12rem', fontWeight: 800, marginBottom: '1rem' }}>
+                  {lang === 'fa' ? 'دیدگاه‌های ثبت‌شده روی آگهی‌های من' : 'Client Reviews'}
+                </h2>
+                {myProReviews.length === 0 ? (
+                  <p style={{ color: '#666860', fontSize: '0.9rem' }}>
+                    {lang === 'fa'
+                      ? 'هنوز دیدگاهی ثبت نشده است.'
+                      : 'No reviews received yet.'}
+                  </p>
+                ) : (
+                  myProReviews.map((rev) => (
+                    <div
+                      key={rev.id}
+                      style={{
+                        paddingBlock: '1rem',
+                        borderBottom: '1px solid rgba(17,18,15,0.08)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <strong>{l(rev.author)}</strong>
+                        <span style={{ fontWeight: 800, color: '#E59934' }}>
+                          ★ {rev.rating}.0
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.9rem', margin: '0.5rem 0' }}>{l(rev.comment)}</p>
+
+                      {rev.reply ? (
+                        <div
+                          style={{
+                            padding: '0.7rem 0.9rem',
+                            borderRadius: 10,
+                            background: '#F6F5F0',
+                            fontSize: '0.84rem',
+                          }}
+                        >
+                          <strong>{lang === 'fa' ? 'پاسخ شما: ' : 'Your Reply: '}</strong>
+                          {l(rev.reply)}
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: 8 }}>
+                          <input
+                            type="text"
+                            placeholder={
+                              lang === 'fa' ? 'پاسخ به این دیدگاه...' : 'Write a reply...'
+                            }
+                            value={replyTexts[rev.id] || ''}
+                            onChange={(e) =>
+                              setReplyTexts((p) => ({ ...p, [rev.id]: e.target.value }))
+                            }
+                            style={{
+                              flex: 1,
+                              padding: '0.5rem 0.85rem',
+                              borderRadius: 10,
+                              border: '1px solid rgba(17,18,15,0.14)',
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!replyTexts[rev.id]?.trim()) return;
+                              replyToReview(rev.id, replyTexts[rev.id]);
+                              showToast({
+                                title: lang === 'fa' ? 'پاسخ ثبت شد' : 'Reply Posted',
+                                type: 'success',
+                              });
+                            }}
+                            className="owj-btn owj-btn--dark owj-btn--sm"
+                          >
+                            {lang === 'fa' ? 'ارسال پاسخ' : 'Reply'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* =================================================================
+                CUSTOMER OVERVIEW & CUSTOMER TABS
             ================================================================= */}
             {!isProfessional && activeTab === 'overview' && (
               <>
                 <div className={styles.panel}>
                   <div className={styles.panelHead}>
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 800 }}>
-                      {lang === 'fa'
-                        ? 'آخرین پیام‌هایی که برای متخصصان فرستاده‌اید'
-                        : 'Recent Messages Sent to Providers'}
+                    <h2 style={{ fontSize: '1.08rem', fontWeight: 800 }}>
+                      {lang === 'fa' ? 'گفتگوهای اخیر من با متخصصان' : 'Recent Conversations'}
                     </h2>
-                    <Link to="/messages" className="owj-btn owj-btn--dark owj-btn--sm">
-                      {lang === 'fa' ? 'مشاهده همه در پیام‌رسان' : 'Open Messenger'}
+                    <Link to="/messages" className="owj-btn owj-btn--outline owj-btn--sm">
+                      {lang === 'fa' ? 'همه پیام‌ها' : 'All Messages'}
                     </Link>
                   </div>
 
                   {sentConvs.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#666860' }}>
+                    <div style={{ textAlign: 'center', padding: '1.5rem 1rem', color: '#666860' }}>
                       <p style={{ marginBottom: '0.9rem' }}>
                         {lang === 'fa'
                           ? 'هنوز پیامی برای متخصصان ارسال نکرده‌اید.'
-                          : 'You have not sent any messages to providers yet.'}
+                          : 'You have not contacted any specialists yet.'}
                       </p>
                       <Link to="/explore" className="owj-btn owj-btn--lime owj-btn--sm">
-                        {lang === 'fa' ? 'یافتن متخصص و ارسال پیام' : 'Find a Provider'}
+                        {lang === 'fa' ? 'مشاهده آگهی‌ها' : 'Explore Services'}
                       </Link>
                     </div>
                   ) : (
-                    sentConvs.map((conv) => {
-                      const lastMsg = conv.messages?.[conv.messages.length - 1];
-                      return (
-                        <div key={conv.id} className={styles.adRow}>
-                          <Stack direction="row" spacing={1.5} alignItems="center">
-                            <div
-                              style={{
-                                width: 46,
-                                height: 46,
-                                borderRadius: '50%',
-                                overflow: 'hidden',
-                                flexShrink: 0,
-                              }}
-                            >
-                              <SmartImage
-                                src={conv.participantAvatar}
-                                alt={l(conv.participantName)}
-                              />
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: 800 }}>{l(conv.participantName)}</div>
-                              <div style={{ fontSize: '0.8rem', color: '#666860' }}>
-                                {l(conv.serviceTitle)}
-                              </div>
-                              {lastMsg && (
-                                <div
-                                  style={{
-                                    fontSize: '0.78rem',
-                                    color: '#464841',
-                                    marginTop: 3,
-                                  }}
-                                >
-                                  {l(lastMsg.text)}
-                                </div>
-                              )}
-                            </div>
-                          </Stack>
-                          <Link
-                            to={`/messages?conv=${conv.id}`}
-                            className="owj-btn owj-btn--outline owj-btn--sm"
+                    sentConvs.slice(0, 3).map((conv) => (
+                      <div key={conv.id} className={styles.adRow}>
+                        <Stack direction="row" spacing={1.2} alignItems="center">
+                          <div
+                            style={{
+                              width: 44,
+                              height: 44,
+                              borderRadius: 12,
+                              overflow: 'hidden',
+                              flexShrink: 0,
+                            }}
                           >
-                            {lang === 'fa' ? 'مشاهده گفتگو' : 'Open Chat'}
-                          </Link>
-                        </div>
-                      );
-                    })
+                            <SmartImage
+                              src={conv.participantAvatar}
+                              alt={l(conv.participantName)}
+                            />
+                          </div>
+                          <div>
+                            <strong>{l(conv.participantName)}</strong>
+                            <div style={{ fontSize: '0.8rem', color: '#666860' }}>
+                              {l(conv.serviceTitle)} • {formatRelativeTime(conv.updatedAt, lang)}
+                            </div>
+                          </div>
+                        </Stack>
+                        <Link
+                          to={`/messages?conv=${conv.id}`}
+                          className="owj-btn owj-btn--dark owj-btn--sm"
+                        >
+                          {lang === 'fa' ? 'باز کردن گفتگو' : 'Open Chat'}
+                        </Link>
+                      </div>
+                    ))
                   )}
                 </div>
 
                 <div className={styles.panel}>
                   <div className={styles.panelHead}>
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 800 }}>
-                      {lang === 'fa' ? 'خدمات ذخیره‌شده اخیر' : 'Recently Saved Services'}
+                    <h2 style={{ fontSize: '1.08rem', fontWeight: 800 }}>
+                      {lang === 'fa' ? 'آگهی‌های ذخیره‌شده من' : 'Saved Services'}
                     </h2>
                     <button
                       type="button"
                       onClick={() => setTab('favorites')}
                       className="owj-btn owj-btn--ghost owj-btn--sm"
                     >
-                      {lang === 'fa' ? 'همه علاقه‌مندی‌ها' : 'View All Saved'}
+                      {lang === 'fa' ? 'مشاهده همه' : 'View All'}
                     </button>
                   </div>
-                  <Grid container spacing={2}>
-                    {savedAdObjects.slice(0, 2).map((ad) => (
-                      <Grid key={ad.id} size={{ xs: 12, md: 6 }}>
-                        <ServiceCard ad={ad} />
-                      </Grid>
-                    ))}
-                  </Grid>
+
+                  {savedAdObjects.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '1.5rem 1rem', color: '#666860' }}>
+                      <p style={{ marginBottom: '0.85rem' }}>
+                        {lang === 'fa'
+                          ? 'هنوز آگهی‌ای را ذخیره نکرده‌اید.'
+                          : 'You have not bookmarked any services yet.'}
+                      </p>
+                      <Link to="/explore" className="owj-btn owj-btn--outline owj-btn--sm">
+                        {lang === 'fa' ? 'کاوش خدمات' : 'Browse Services'}
+                      </Link>
+                    </div>
+                  ) : (
+                    <Grid container spacing={2}>
+                      {savedAdObjects.slice(0, 2).map((ad) => (
+                        <Grid key={ad.id} size={{ xs: 12, md: 6 }}>
+                          <ServiceCard ad={ad} />
+                        </Grid>
+                      ))}
+                    </Grid>
+                  )}
                 </div>
               </>
             )}
@@ -526,12 +812,10 @@ export default function DashboardPage() {
               <div className={styles.panel}>
                 <div className={styles.panelHead}>
                   <h2 style={{ fontSize: '1.12rem', fontWeight: 800 }}>
-                    {lang === 'fa'
-                      ? `همه پیام‌های ارسالی به متخصصان (${formatNumber(sentConvs.length, lang)})`
-                      : `All Messages Sent to Providers (${sentConvs.length})`}
+                    {lang === 'fa' ? 'پیام‌های ارسالی من به متخصصان' : 'Messages Sent to Specialists'}
                   </h2>
                   <Link to="/messages" className="owj-btn owj-btn--lime owj-btn--sm">
-                    {lang === 'fa' ? 'ورود به پیام‌رسان کامل' : 'Full Messenger'}
+                    {lang === 'fa' ? 'باز کردن پیام‌رسان' : 'Open Messenger'}
                   </Link>
                 </div>
 
@@ -539,12 +823,12 @@ export default function DashboardPage() {
                   const lastMsg = conv.messages?.[conv.messages.length - 1];
                   return (
                     <div key={conv.id} className={styles.adRow}>
-                      <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Stack direction="row" spacing={1.4} alignItems="center">
                         <div
                           style={{
                             width: 48,
                             height: 48,
-                            borderRadius: '50%',
+                            borderRadius: 14,
                             overflow: 'hidden',
                             flexShrink: 0,
                           }}
@@ -559,7 +843,7 @@ export default function DashboardPage() {
                             <strong>{l(conv.participantName)}</strong>
                             <Chip
                               size="small"
-                              label={lang === 'fa' ? 'ارسالی به متخصص' : 'Sent to Provider'}
+                              label={lang === 'fa' ? 'ارسالی به متخصص' : 'Sent to Specialist'}
                               sx={{ height: 21, fontSize: '0.68rem', fontWeight: 800 }}
                             />
                           </Stack>
@@ -591,15 +875,15 @@ export default function DashboardPage() {
                     {lang === 'fa' ? 'دیدگاه‌های ثبت‌شده من' : 'My Submitted Reviews'}
                   </h2>
                   <Link to="/explore" className="owj-btn owj-btn--outline owj-btn--sm">
-                    {lang === 'fa' ? 'ثبت دیدگاه روی خدمات' : 'Browse Services'}
+                    {lang === 'fa' ? 'مشاهده آگهی‌ها' : 'Browse Services'}
                   </Link>
                 </div>
 
                 {customerWrittenReviews.length === 0 ? (
                   <p style={{ color: '#666860', fontSize: '0.9rem' }}>
                     {lang === 'fa'
-                      ? 'شما می‌توانید در صفحه هر خدمت تخصصی، امتیاز و تجربه همکاری خود را ثبت کنید.'
-                      : 'Visit any service page to rate and review a specialist you worked with.'}
+                      ? 'شما می‌توانید در صفحه هر آگهی امتیاز و تجربه خود را ثبت کنید.'
+                      : 'Visit any service listing to rate and review a specialist.'}
                   </p>
                 ) : (
                   customerWrittenReviews.map((rev) => (
@@ -622,791 +906,80 @@ export default function DashboardPage() {
             )}
 
             {/* =================================================================
-                PROVIDER DASHBOARD TABS (isProfessional)
+                SHARED TAB: SAVED FAVORITES
             ================================================================= */}
-            {isProfessional && activeTab === 'overview' && (
+            {activeTab === 'favorites' && (
               <>
                 <div className={styles.panel}>
-                  <div className={styles.panelHead}>
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 800 }}>
-                      {lang === 'fa'
-                        ? 'روند بازدید هفتگی پروفایل و آگهی‌ها'
-                        : 'Weekly Engagement Activity'}
-                    </h2>
-                    <Link
-                      to={`/professionals/${currentPro.id}`}
-                      className="owj-btn owj-btn--outline owj-btn--sm"
-                    >
-                      {lang === 'fa' ? 'مشاهده پروفایل عمومی' : 'Public Profile'}
-                    </Link>
-                  </div>
-
-                  <div className={styles.chartBars}>
-                    {weeklyChart.map((col, idx) => (
-                      <div key={idx} className={styles.barCol}>
-                        <div className={styles.barFill} style={{ height: `${col.pct}%` }} />
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#666860' }}>
-                          {col.day[lang]}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Split Summary: Customer Messages vs Sent Skill Requests */}
-                <Grid container spacing={2.5}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <div className={styles.panel} style={{ height: '100%' }}>
-                      <div className={styles.panelHead}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>
-                          {lang === 'fa'
-                            ? 'پیام‌های دریافتی از مشتریان'
-                            : 'Messages from Customers'}
-                        </h3>
-                        <Link
-                          to="/messages?box=received"
-                          className="owj-btn owj-btn--ghost owj-btn--sm"
-                        >
-                          {lang === 'fa' ? 'مشاهده همه' : 'View All'}
-                        </Link>
-                      </div>
-                      {receivedCustomerConvs.slice(0, 3).map((conv) => (
-                        <div key={conv.id} className={styles.adRow}>
-                          <div>
-                            <div
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 5,
-                                fontWeight: 800,
-                              }}
-                            >
-                              <ArrowDownLeft size={14} color="#289e67" />
-                              <span>{l(conv.participantName)}</span>
-                            </div>
-                            <div style={{ fontSize: '0.78rem', color: '#666860' }}>
-                              {l(conv.serviceTitle)}
-                            </div>
-                          </div>
-                          <Link
-                            to={`/messages?conv=${conv.id}`}
-                            className="owj-btn owj-btn--outline owj-btn--sm"
-                          >
-                            {lang === 'fa' ? 'پاسخ' : 'Reply'}
-                          </Link>
-                        </div>
-                      ))}
-                    </div>
-                  </Grid>
-
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <div className={styles.panel} style={{ height: '100%' }}>
-                      <div className={styles.panelHead}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>
-                          {lang === 'fa'
-                            ? 'پیام‌ها و درخواست‌های مهارت ارسالی'
-                            : 'Sent to Others & Skill Requests'}
-                        </h3>
-                        <button
-                          type="button"
-                          onClick={() => openSkillRequestModal()}
-                          className="owj-btn owj-btn--lime owj-btn--sm"
-                        >
-                          <Sparkles size={14} />
-                          <span>{lang === 'fa' ? 'درخواست مهارت' : 'Request Skill'}</span>
-                        </button>
-                      </div>
-                      {sentConvs.slice(0, 3).map((conv) => (
-                        <div key={conv.id} className={styles.adRow}>
-                          <div>
-                            <div
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 5,
-                                fontWeight: 800,
-                              }}
-                            >
-                              <ArrowUpRight size={14} />
-                              <span>{l(conv.participantName)}</span>
-                            </div>
-                            <div style={{ fontSize: '0.78rem', color: '#666860' }}>
-                              {l(conv.serviceTitle)}
-                            </div>
-                          </div>
-                          <Link
-                            to={`/messages?conv=${conv.id}`}
-                            className="owj-btn owj-btn--outline owj-btn--sm"
-                          >
-                            {lang === 'fa' ? 'گفتگو' : 'Open'}
-                          </Link>
-                        </div>
-                      ))}
-                    </div>
-                  </Grid>
-                </Grid>
-              </>
-            )}
-
-            {/* PROVIDER TAB: MY ADVERTISEMENTS */}
-            {isProfessional && activeTab === 'ads' && (
-              <div className={styles.panel}>
-                <div className={styles.panelHead}>
-                  <h2 style={{ fontSize: '1.15rem', fontWeight: 800 }}>
-                    {lang === 'fa' ? 'مدیریت آگهی‌های خدمات من' : 'Manage My Advertisements'}
+                  <h2 style={{ fontSize: '1.12rem', fontWeight: 800, marginBottom: '1rem' }}>
+                    {lang === 'fa' ? 'آگهی‌های ذخیره‌شده' : 'Saved Services'}
                   </h2>
-                  <Link to="/create-ad" className="owj-btn owj-btn--lime owj-btn--sm">
-                    <Plus size={15} />
-                    <span>{lang === 'fa' ? 'ثبت آگهی جدید' : 'New Listing'}</span>
-                  </Link>
-                </div>
-
-                {myAds.map((ad) => (
-                  <div key={ad.id} className={styles.adRow}>
-                    <div className={styles.adMeta}>
-                      <div className={styles.adThumb}>
-                        <SmartImage src={ad.images?.[0]} alt={l(ad.title)} />
-                      </div>
-                      <div>
-                        <Link to={`/services/${ad.id}`} style={{ fontWeight: 800 }}>
-                          {l(ad.title)}
-                        </Link>
-                        <div style={{ fontSize: '0.8rem', color: '#666860', marginTop: 3 }}>
-                          {formatPrice(ad, lang)} •{' '}
-                          <span
-                            className={`${styles.statusBadge} ${
-                              ad.status === 'active' ? styles.activeStatus : styles.pausedStatus
-                            }`}
-                          >
-                            {ad.status === 'active'
-                              ? lang === 'fa'
-                                ? 'فعال'
-                                : 'Active'
-                              : lang === 'fa'
-                              ? 'متوقف‌شده'
-                              : 'Paused'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
-                      <Link
-                        to={`/edit-ad/${ad.id}`}
-                        className="owj-btn owj-btn--outline owj-btn--sm"
-                      >
-                        <Edit3 size={14} />
-                        <span>{lang === 'fa' ? 'ویرایش' : 'Edit'}</span>
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          toggleAdvertisementStatus(ad.id);
-                          showToast({
-                            title:
-                              ad.status === 'active'
-                                ? lang === 'fa'
-                                  ? 'آگهی موقتاً متوقف شد'
-                                  : 'Listing Paused'
-                                : lang === 'fa'
-                                ? 'آگهی مجدداً فعال شد'
-                                : 'Listing Activated',
-                            type: 'info',
-                          });
-                        }}
-                        className="owj-btn owj-btn--outline owj-btn--sm"
-                      >
-                        {ad.status === 'active' ? (
-                          <PauseCircle size={14} />
-                        ) : (
-                          <PlayCircle size={14} />
-                        )}
-                        <span>
-                          {ad.status === 'active'
-                            ? lang === 'fa'
-                              ? 'توقف'
-                              : 'Pause'
-                            : lang === 'fa'
-                            ? 'فعال‌سازی'
-                            : 'Activate'}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(ad)}
-                        className="owj-btn owj-btn--danger owj-btn--sm"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* PROVIDER TAB: CUSTOMER INQUIRIES */}
-            {isProfessional && activeTab === 'inquiries' && (
-              <div className={styles.panel}>
-                <div className={styles.panelHead}>
-                  <h2 style={{ fontSize: '1.15rem', fontWeight: 800 }}>
-                    {lang === 'fa'
-                      ? 'پیام‌ها و درخواست‌های دریافتی از مشتریان'
-                      : 'Customer Inquiries & Incoming Messages'}
-                  </h2>
-                  <Link
-                    to="/messages?box=received"
-                    className="owj-btn owj-btn--dark owj-btn--sm"
-                  >
-                    {lang === 'fa' ? 'صندوق دریافتی مشتریان' : 'Customer Inbox'}
-                  </Link>
-                </div>
-
-                {inquiries.map((inq) => (
-                  <div
-                    key={inq.id}
-                    style={{
-                      padding: '1rem',
-                      borderRadius: 14,
-                      border: '1px solid rgba(17,18,15,0.08)',
-                      marginBottom: '0.85rem',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: 8,
-                      }}
-                    >
-                      <div>
-                        <strong>{l(inq.clientName)}</strong>
-                        <span
-                          style={{
-                            marginInlineStart: 8,
-                            fontSize: '0.8rem',
-                            color: '#666860',
-                          }}
-                        >
-                          ({l(inq.serviceTitle)})
-                        </span>
-                      </div>
-                      <span style={{ fontWeight: 800 }}>
-                        {formatPrice({ price: inq.budget, priceUsd: inq.budgetUsd }, lang)}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: '0.88rem', color: '#464841', margin: '0.6rem 0' }}>
-                      {l(inq.message)}
+                  {savedAdObjects.length === 0 ? (
+                    <p style={{ color: '#666860', fontSize: '0.9rem' }}>
+                      {lang === 'fa' ? 'موردی ذخیره نشده است.' : 'No saved listings yet.'}
                     </p>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <button
-                        type="button"
-                        onClick={() => updateInquiryStatus(inq.id, 'accepted')}
-                        className="owj-btn owj-btn--lime owj-btn--sm"
-                      >
-                        {lang === 'fa' ? 'پذیرش درخواست' : 'Accept'}
-                      </button>
-                      <Link
-                        to="/messages?box=received"
-                        className="owj-btn owj-btn--outline owj-btn--sm"
-                      >
-                        {lang === 'fa' ? 'پاسخ در پیام‌رسان' : 'Reply in Chat'}
-                      </Link>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#289e67' }}>
-                        {inq.status === 'accepted'
-                          ? lang === 'fa'
-                            ? '✓ تایید شده'
-                            : '✓ Accepted'
-                          : ''}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* PROVIDER TAB: SKILL REQUESTS ("providers can also send a request for an skill") */}
-            {isProfessional && activeTab === 'skill-requests' && (
-              <div className={styles.panel}>
-                <div className={styles.panelHead}>
-                  <div>
-                    <h2 style={{ fontSize: '1.15rem', fontWeight: 800 }}>
-                      {lang === 'fa'
-                        ? 'درخواست‌های مهارت ارسالی من'
-                        : 'My Outgoing Skill Requests'}
-                    </h2>
-                    <p style={{ fontSize: '0.83rem', color: '#666860', marginTop: 3 }}>
-                      {lang === 'fa'
-                        ? 'درخواست مهارت مکمل از سایر متخصصان یا پیشنهاد افزودن مهارت جدید به اوجیفای'
-                        : 'Request specialized skills from fellow providers or submit new skills to OWJIFY'}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => openSkillRequestModal()}
-                    className="owj-btn owj-btn--lime owj-btn--sm"
-                  >
-                    <Sparkles size={15} />
-                    <span>
-                      {lang === 'fa' ? 'ثبت درخواست مهارت جدید' : 'New Skill Request'}
-                    </span>
-                  </button>
-                </div>
-
-                {skillRequests.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#666860' }}>
-                    <p style={{ marginBottom: '1rem' }}>
-                      {lang === 'fa'
-                        ? 'هنوز درخواست مهارتی ثبت نکرده‌اید.'
-                        : 'You have not submitted any skill requests yet.'}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => openSkillRequestModal()}
-                      className="owj-btn owj-btn--lime owj-btn--sm"
-                    >
-                      {lang === 'fa' ? 'ارسال اولین درخواست مهارت' : 'Send Skill Request'}
-                    </button>
-                  </div>
-                ) : (
-                  <Stack spacing={1.5}>
-                    {skillRequests.map((req) => {
-                      const cat = getCategoryById(req.categoryId);
-                      return (
-                        <div
-                          key={req.id}
-                          style={{
-                            padding: '1.15rem',
-                            borderRadius: 16,
-                            border: '1px solid rgba(17,18,15,0.09)',
-                            background: '#FAFAF7',
-                          }}
-                        >
-                          <Stack
-                            direction={{ xs: 'column', sm: 'row' }}
-                            justifyContent="space-between"
-                            alignItems={{ xs: 'flex-start', sm: 'center' }}
-                            spacing={1}
-                          >
-                            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                              <strong style={{ fontSize: '1rem' }}>{l(req.skillName)}</strong>
-                              <Chip
-                                size="small"
-                                label={l(cat.name)}
-                                sx={{ fontWeight: 700, fontSize: '0.72rem' }}
-                              />
-                              <Chip
-                                size="small"
-                                label={
-                                  req.requestType === 'specialist_collaboration'
-                                    ? lang === 'fa'
-                                      ? 'همکاری با متخصص'
-                                      : 'Provider Collaboration'
-                                    : lang === 'fa'
-                                    ? 'پیشنهاد مهارت پلتفرم'
-                                    : 'Platform Taxonomy'
-                                }
-                                sx={{
-                                  bgcolor: '#11120F',
-                                  color: '#C7F36B',
-                                  fontWeight: 800,
-                                  fontSize: '0.7rem',
-                                }}
-                              />
-                              {req.urgency === 'urgent' && (
-                                <Chip
-                                  size="small"
-                                  label={lang === 'fa' ? 'فوری' : 'Urgent'}
-                                  sx={{
-                                    bgcolor: 'rgba(217, 72, 72, 0.12)',
-                                    color: '#b83232',
-                                    fontWeight: 800,
-                                    fontSize: '0.7rem',
-                                  }}
-                                />
-                              )}
-                            </Stack>
-
-                            <span style={{ fontSize: '0.76rem', color: '#666860' }}>
-                              {formatRelativeTime(req.createdAt, lang)}
-                            </span>
-                          </Stack>
-
-                          {req.targetProName && (
-                            <div style={{ fontSize: '0.83rem', color: '#464841', marginTop: 6 }}>
-                              <strong>
-                                {lang === 'fa' ? 'متخصص مخاطب: ' : 'Sent to Specialist: '}
-                              </strong>
-                              {l(req.targetProName)}
-                            </div>
-                          )}
-
-                          <p style={{ fontSize: '0.88rem', color: '#464841', marginTop: 8, lineHeight: 1.7 }}>
-                            {l(req.details)}
-                          </p>
-
-                          <Stack
-                            direction="row"
-                            justifyContent="space-between"
-                            alignItems="center"
-                            flexWrap="wrap"
-                            gap={1}
-                            sx={{ mt: 1.5 }}
-                          >
-                            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#289e67' }}>
-                              {req.status === 'approved'
-                                ? lang === 'fa'
-                                  ? '✓ تایید و ثبت شده'
-                                  : '✓ Approved'
-                                : req.status === 'in_discussion'
-                                ? lang === 'fa'
-                                  ? '● در حال گفتگو با متخصص'
-                                  : '● Active in Sent Messages'
-                                : lang === 'fa'
-                                ? '● در حال بررسی'
-                                : '● Under Review'}
-                            </span>
-
-                            {req.conversationId && (
-                              <Link
-                                to={`/messages?conv=${req.conversationId}`}
-                                className="owj-btn owj-btn--dark owj-btn--sm"
-                              >
-                                <MessageSquare size={14} />
-                                <span>
-                                  {lang === 'fa'
-                                    ? 'مشاهده در پیام‌های ارسالی'
-                                    : 'Open Sent Thread'}
-                                </span>
-                              </Link>
-                            )}
-                          </Stack>
-                        </div>
-                      );
-                    })}
-                  </Stack>
-                )}
-              </div>
-            )}
-
-            {/* PROVIDER TAB: AVAILABILITY */}
-            {isProfessional && activeTab === 'availability' && (
-              <form className={styles.panel} onSubmit={handleSaveAvailability}>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '1rem' }}>
-                  {lang === 'fa'
-                    ? 'تنظیم برنامه کاری و وضعیت دسترسی'
-                    : 'Manage Working Schedule'}
-                </h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: 460 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
-                    <input
-                      type="checkbox"
-                      checked={availNow}
-                      onChange={(e) => setAvailNow(e.target.checked)}
-                    />
-                    <span>
-                      {lang === 'fa'
-                        ? 'وضعیت «آماده پذیرش پروژه جدید» فعال باشد'
-                        : 'Show "Available for New Projects" badge'}
-                    </span>
-                  </label>
-
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
-                    <input
-                      type="checkbox"
-                      checked={availUrgent}
-                      onChange={(e) => setAvailUrgent(e.target.checked)}
-                    />
-                    <span>
-                      {lang === 'fa'
-                        ? 'امکان اعزام و خدمات فوری دارم'
-                        : 'Accept Express / Urgent Requests'}
-                    </span>
-                  </label>
-
-                  <div>
-                    <label
-                      style={{
-                        display: 'block',
-                        fontSize: '0.85rem',
-                        fontWeight: 700,
-                        marginBottom: 6,
-                      }}
-                    >
-                      {lang === 'fa' ? 'بازه ساعات پاسخ‌گویی' : 'Response Hours'}
-                    </label>
-                    <input
-                      type="text"
-                      dir="ltr"
-                      value={availHours}
-                      onChange={(e) => setAvailHours(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem 1rem',
-                        borderRadius: 12,
-                        border: '1px solid rgba(17,18,15,0.16)',
-                      }}
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="owj-btn owj-btn--lime"
-                    style={{ alignSelf: 'flex-start' }}
-                  >
-                    {lang === 'fa' ? 'ذخیره برنامه زمانی' : 'Save Availability'}
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* PROVIDER TAB: PORTFOLIO */}
-            {isProfessional && activeTab === 'portfolio' && (
-              <div className={styles.panel}>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '1rem' }}>
-                  {lang === 'fa'
-                    ? 'افزودن پروژه جدید به پورتفولیو'
-                    : 'Add Project to Portfolio'}
-                </h2>
-                <form
-                  onSubmit={handleAddPortfolio}
-                  style={{
-                    display: 'grid',
-                    gap: '0.85rem',
-                    marginBottom: '1.75rem',
-                    maxWidth: 560,
-                  }}
-                >
-                  <input
-                    type="text"
-                    required
-                    value={pfTitle}
-                    onChange={(e) => setPfTitle(e.target.value)}
-                    placeholder={
-                      lang === 'fa'
-                        ? 'عنوان پروژه انجام‌شده...'
-                        : 'Completed project title...'
-                    }
-                    style={{
-                      padding: '0.75rem 1rem',
-                      borderRadius: 12,
-                      border: '1px solid rgba(17,18,15,0.16)',
-                    }}
-                  />
-                  <textarea
-                    rows={2}
-                    value={pfSummary}
-                    onChange={(e) => setPfSummary(e.target.value)}
-                    placeholder={lang === 'fa' ? 'خلاصه دستاورد فنی...' : 'Brief case study summary...'}
-                    style={{
-                      padding: '0.75rem 1rem',
-                      borderRadius: 12,
-                      border: '1px solid rgba(17,18,15,0.16)',
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    className="owj-btn owj-btn--dark owj-btn--sm"
-                    style={{ justifySelf: 'start' }}
-                  >
-                    <Plus size={15} />
-                    <span>{lang === 'fa' ? 'افزودن به پورتفولیو' : 'Add Portfolio Item'}</span>
-                  </button>
-                </form>
-
-                <Grid container spacing={2}>
-                  {(currentPro.portfolio || []).map((pf) => (
-                    <Grid key={pf.id} size={{ xs: 12, sm: 6, md: 4 }}>
-                      <div
-                        style={{
-                          border: '1px solid rgba(17,18,15,0.08)',
-                          borderRadius: 14,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <div style={{ height: 150 }}>
-                          <SmartImage src={pf.image} alt={l(pf.title)} />
-                        </div>
-                        <div
-                          style={{
-                            padding: '0.85rem',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <strong style={{ fontSize: '0.88rem' }}>{l(pf.title)}</strong>
-                          <button
-                            type="button"
-                            onClick={() => deletePortfolioProject(currentPro.id, pf.id)}
-                            style={{ color: '#d94848' }}
-                            aria-label="Remove portfolio item"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </div>
+                  ) : (
+                    <Grid container spacing={2}>
+                      {savedAdObjects.map((ad) => (
+                        <Grid key={ad.id} size={{ xs: 12, md: 6 }}>
+                          <ServiceCard ad={ad} />
+                        </Grid>
+                      ))}
                     </Grid>
-                  ))}
-                </Grid>
-              </div>
-            )}
+                  )}
+                </div>
 
-            {/* SHARED TAB: SAVED FAVORITES */}
-            {activeTab === 'favorites' && (
-              <div className={styles.panel}>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '1rem' }}>
-                  {lang === 'fa'
-                    ? 'خدمات و متخصصان ذخیره‌شده'
-                    : 'Saved Services & Specialists'}
-                </h2>
-                {savedAdObjects.length === 0 && savedProObjects.length === 0 ? (
-                  <p style={{ color: '#666860' }}>
-                    {lang === 'fa'
-                      ? 'هنوز موردی ذخیره نشده است.'
-                      : 'No saved items yet.'}
-                  </p>
-                ) : (
-                  <>
-                    {savedAdObjects.length > 0 && (
-                      <Grid container spacing={2} sx={{ mb: 3 }}>
-                        {savedAdObjects.map((ad) => (
-                          <Grid key={ad.id} size={{ xs: 12, md: 6 }}>
-                            <ServiceCard ad={ad} />
-                          </Grid>
-                        ))}
-                      </Grid>
-                    )}
-                    {savedProObjects.length > 0 && (
-                      <Grid container spacing={2}>
-                        {savedProObjects.map((pro) => (
-                          <Grid key={pro.id} size={{ xs: 12, md: 6 }}>
-                            <ProfessionalCard pro={pro} />
-                          </Grid>
-                        ))}
-                      </Grid>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* PROVIDER TAB: REVIEWS */}
-            {isProfessional && activeTab === 'reviews' && (
-              <div className={styles.panel}>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '1rem' }}>
-                  {lang === 'fa'
-                    ? 'دیدگاه‌های مشتریان و ثبت پاسخ رسمی'
-                    : 'Client Reviews & Responses'}
-                </h2>
-                {myProReviews.map((rev) => (
-                  <div
-                    key={rev.id}
-                    style={{
-                      paddingBlock: '1rem',
-                      borderBottom: '1px solid rgba(17,18,15,0.08)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <strong>{l(rev.author)}</strong>
-                      <span style={{ color: '#E59934', fontWeight: 800 }}>★ {rev.rating}.0</span>
-                    </div>
-                    <p style={{ fontSize: '0.88rem', margin: '0.5rem 0' }}>{l(rev.comment)}</p>
-
-                    {rev.reply ? (
-                      <div
-                        style={{
-                          padding: '0.6rem 0.9rem',
-                          background: '#F6F5F0',
-                          borderRadius: 10,
-                          fontSize: '0.82rem',
-                        }}
-                      >
-                        <strong>{lang === 'fa' ? 'پاسخ شما: ' : 'Your Reply: '}</strong>
-                        {l(rev.reply)}
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: 8 }}>
-                        <input
-                          type="text"
-                          value={replyTexts[rev.id] || ''}
-                          onChange={(e) =>
-                            setReplyTexts((p) => ({ ...p, [rev.id]: e.target.value }))
-                          }
-                          placeholder={
-                            lang === 'fa'
-                              ? 'پاسخ محترمانه به دیدگاه مشتری...'
-                              : 'Write an official reply...'
-                          }
-                          style={{
-                            flex: 1,
-                            padding: '0.55rem 0.85rem',
-                            borderRadius: 10,
-                            border: '1px solid rgba(17,18,15,0.15)',
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!replyTexts[rev.id]?.trim()) return;
-                            replyToReview(rev.id, replyTexts[rev.id].trim());
-                            showToast({
-                              title: lang === 'fa' ? 'پاسخ ثبت شد' : 'Reply Published',
-                              type: 'success',
-                            });
-                          }}
-                          className="owj-btn owj-btn--dark owj-btn--sm"
-                        >
-                          {lang === 'fa' ? 'ارسال پاسخ' : 'Reply'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                <div className={styles.panel}>
+                  <h2 style={{ fontSize: '1.12rem', fontWeight: 800, marginBottom: '1rem' }}>
+                    {lang === 'fa' ? 'متخصصان ذخیره‌شده' : 'Saved Specialists'}
+                  </h2>
+                  {savedProObjects.length === 0 ? (
+                    <p style={{ color: '#666860', fontSize: '0.9rem' }}>
+                      {lang === 'fa' ? 'متخصصی ذخیره نشده است.' : 'No saved specialists yet.'}
+                    </p>
+                  ) : (
+                    <Grid container spacing={2}>
+                      {savedProObjects.map((pro) => (
+                        <Grid key={pro.id} size={{ xs: 12, md: 6 }}>
+                          <ProfessionalCard pro={pro} />
+                        </Grid>
+                      ))}
+                    </Grid>
+                  )}
+                </div>
+              </>
             )}
           </Grid>
         </Grid>
       </Container>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Listing Confirmation Modal */}
       <Modal
         isOpen={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
-        title={lang === 'fa' ? 'حذف دائمی آگهی' : 'Delete Advertisement'}
+        title={lang === 'fa' ? 'تایید حذف آگهی' : 'Delete Advertisement'}
       >
-        {deleteTarget && (
-          <div>
-            <p style={{ marginBottom: '1.25rem', lineHeight: 1.75 }}>
-              {lang === 'fa'
-                ? `آیا از حذف آگهی «${l(deleteTarget.title)}» اطمینان دارید؟`
-                : `Are you sure you want to delete "${l(deleteTarget.title)}"?`}
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.6rem' }}>
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(null)}
-                className="owj-btn owj-btn--outline owj-btn--sm"
-              >
-                {lang === 'fa' ? 'انصراف' : 'Cancel'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  deleteAdvertisement(deleteTarget.id);
-                  setDeleteTarget(null);
-                  showToast({
-                    title: lang === 'fa' ? 'آگهی حذف شد' : 'Advertisement Deleted',
-                    type: 'info',
-                  });
-                }}
-                className="owj-btn owj-btn--danger owj-btn--sm"
-              >
-                {lang === 'fa' ? 'بله، حذف شود' : 'Delete Listing'}
-              </button>
-            </div>
-          </div>
-        )}
+        <p style={{ fontSize: '0.92rem', color: '#464841', marginBottom: '1.5rem' }}>
+          {lang === 'fa'
+            ? `آیا از حذف آگهی «${deleteTarget ? l(deleteTarget.title) : ''}» اطمینان دارید؟`
+            : `Are you sure you want to delete "${deleteTarget ? l(deleteTarget.title) : ''}"?`}
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+          <button
+            type="button"
+            onClick={() => setDeleteTarget(null)}
+            className="owj-btn owj-btn--outline owj-btn--sm"
+          >
+            {lang === 'fa' ? 'انصراف' : 'Cancel'}
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmDeleteAd}
+            className="owj-btn owj-btn--danger owj-btn--sm"
+          >
+            {lang === 'fa' ? 'بله، حذف شود' : 'Delete Permanently'}
+          </button>
+        </div>
       </Modal>
     </PageTransition>
   );

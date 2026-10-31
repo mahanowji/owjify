@@ -19,8 +19,8 @@ export default function VerifySuccessPage() {
         <p className={styles.subtitle}>
           {isProfessional
             ? lang === 'fa'
-              ? 'اکنون به پنل متخصص، ثبت آگهی، درخواست مهارت و صندوق پیام‌ها دسترسی دارید.'
-              : 'Your Provider account is active. Publish services, request skills, and manage client messages.'
+              ? 'اکنون به داشبورد متخصص، ثبت آگهی و صندوق پیام‌ها دسترسی دارید.'
+              : 'Your Specialist account is active. Publish services and manage messages.'
             : lang === 'fa'
             ? 'اکنون می‌توانید با متخصصان گفتگو کنید و خدمات موردعلاقه خود را ذخیره نمایید.'
             : 'Your Customer account is active. Message providers directly and save favorite services.'}

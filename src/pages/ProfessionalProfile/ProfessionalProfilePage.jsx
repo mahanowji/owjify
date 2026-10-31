@@ -18,6 +18,9 @@ import {
   ArrowRight,
   ArrowLeft,
   Edit3,
+  ShieldCheck,
+  Headset,
+  Trash2,
 } from 'lucide-react';
 import PageTransition from '../../components/common/PageTransition';
 import SmartImage from '../../components/common/SmartImage';
@@ -29,21 +32,34 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useToast } from '../../context/ToastContext';
-import { formatNumber, formatRelativeTime, toPersianDigits } from '../../utils/formatters';
+import {
+  formatNumber,
+  formatRelativeTime,
+  toPersianDigits,
+  formatAvailabilityDays,
+} from '../../utils/formatters';
 import styles from './ProfessionalProfilePage.module.scss';
 
 export default function ProfessionalProfilePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { lang, isRTL, l, ui } = useLanguage();
-  const { user, hasToken, isProfessional } = useAuth();
+  const {
+    user,
+    hasToken,
+    isProfessional,
+    isOperator,
+    isAdmin,
+    isMarketplaceMember,
+  } = useAuth();
   const {
     professionals,
     advertisements,
     reviews,
     favoritePros,
     toggleFavoritePro,
-    openSkillRequestModal,
+    adminUpdateSpecialist,
+    deleteReview,
   } = useMarketplace();
   const { showToast } = useToast();
 
@@ -79,7 +95,7 @@ export default function ProfessionalProfilePage() {
   }
 
   const location = getLocationById(pro.locationId);
-  const isFav = hasToken && favoritePros.includes(pro.id);
+  const isFav = isMarketplaceMember && favoritePros.includes(pro.id);
   const isOwnProfile = hasToken && isProfessional && user?.proId === pro.id;
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
 
@@ -88,6 +104,7 @@ export default function ProfessionalProfilePage() {
       navigate('/auth/login', { state: { from: `/professionals/${pro.id}` } });
       return;
     }
+    if (!isMarketplaceMember) return;
     const saved = toggleFavoritePro(pro.id);
     showToast({
       title: saved
@@ -108,7 +125,7 @@ export default function ProfessionalProfilePage() {
         <SmartImage src={pro.cover} alt={l(pro.name)} />
         <div className={styles.backLinkWrap}>
           <Container maxWidth="xl">
-            <Link to="/explore" className={styles.backPill}>
+            <Link to="/explore?tab=professionals" className={styles.backPill}>
               <BackIcon size={14} />
               <span>{lang === 'fa' ? 'بازگشت به کاوش متخصصان' : 'Back to Specialists'}</span>
             </Link>
@@ -184,7 +201,70 @@ export default function ProfessionalProfilePage() {
                 </span>
               </div>
 
-              {isOwnProfile ? (
+              {isAdmin ? (
+                <div className={styles.primaryWithIconsRow}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      adminUpdateSpecialist(pro.id, { verified: !pro.verified });
+                      showToast({
+                        title: !pro.verified
+                          ? lang === 'fa'
+                            ? 'نشان تایید تخصصی فعال شد'
+                            : 'Specialist Verified'
+                          : lang === 'fa'
+                          ? 'نشان تایید برداشته شد'
+                          : 'Verification Revoked',
+                        type: 'info',
+                      });
+                    }}
+                    className={styles.primaryActionBtn}
+                  >
+                    <BadgeCheck size={16} color="#C7F36B" />
+                    <span>
+                      {pro.verified
+                        ? lang === 'fa'
+                          ? 'لغو نشان تایید'
+                          : 'Revoke Badge'
+                        : lang === 'fa'
+                        ? 'اعطای نشان تایید'
+                        : 'Verify Specialist'}
+                    </span>
+                  </button>
+                  <Tooltip title={lang === 'fa' ? 'مدیریت در CRM' : 'Open Admin CRM'} arrow>
+                    <Link to="/admin" className={styles.iconActionBtn} aria-label="Admin CRM">
+                      <ShieldCheck size={16} />
+                    </Link>
+                  </Tooltip>
+                  <Tooltip title={ui.common.share} arrow>
+                    <button
+                      type="button"
+                      onClick={() => setShareOpen(true)}
+                      className={styles.iconActionBtn}
+                      aria-label={ui.common.share}
+                    >
+                      <Share2 size={16} />
+                    </button>
+                  </Tooltip>
+                </div>
+              ) : isOperator ? (
+                <div className={styles.primaryWithIconsRow}>
+                  <Link to="/operator" className={styles.primaryActionBtn}>
+                    <Headset size={16} color="#C7F36B" />
+                    <span>{lang === 'fa' ? 'میز پشتیبانی' : 'Operator Desk'}</span>
+                  </Link>
+                  <Tooltip title={ui.common.share} arrow>
+                    <button
+                      type="button"
+                      onClick={() => setShareOpen(true)}
+                      className={styles.iconActionBtn}
+                      aria-label={ui.common.share}
+                    >
+                      <Share2 size={16} />
+                    </button>
+                  </Tooltip>
+                </div>
+              ) : isOwnProfile ? (
                 <div className={styles.primaryWithIconsRow}>
                   <Link to="/create-ad" className={styles.primaryActionBtn}>
                     <Plus size={16} color="#C7F36B" />
@@ -254,22 +334,6 @@ export default function ProfessionalProfilePage() {
                       </button>
                     </Tooltip>
                   </div>
-
-                  {isProfessional && (
-                    <button
-                      type="button"
-                      onClick={() => openSkillRequestModal(pro)}
-                      className={styles.secondaryActionBtn}
-                      style={{ width: '100%' }}
-                    >
-                      <Sparkles size={14} />
-                      <span>
-                        {lang === 'fa'
-                          ? 'پیشنهاد همکاری / درخواست مهارت'
-                          : 'Request Skill Collaboration'}
-                      </span>
-                    </button>
-                  )}
                 </>
               ) : (
                 <div className={styles.primaryWithIconsRow}>
@@ -442,7 +506,9 @@ export default function ProfessionalProfilePage() {
                         <Globe size={16} color="#464841" />
                         <span>
                           <strong>{lang === 'fa' ? 'زبان‌ها: ' : 'Languages: '}</strong>
-                          {(pro.languages || []).map((lg) => l(lg)).join(' ، ')}
+                          {(pro.languages || [])
+                            .map((lg) => l(lg))
+                            .join(lang === 'fa' ? '، ' : ', ')}
                         </span>
                       </div>
                     )}
@@ -450,9 +516,7 @@ export default function ProfessionalProfilePage() {
                       <Clock size={16} color="#464841" />
                       <span>
                         <strong>{lang === 'fa' ? 'برنامه حضور: ' : 'Schedule: '}</strong>
-                        {Array.isArray(pro.availability?.days)
-                          ? pro.availability.days.join(', ')
-                          : l(pro.availability?.days)}{' '}
+                        {formatAvailabilityDays(pro.availability?.days, lang)}{' '}
                         ({pro.availability?.hours || '09:00 - 20:00'})
                       </span>
                     </div>
@@ -503,8 +567,22 @@ export default function ProfessionalProfilePage() {
                       <div className={styles.portfolioImg}>
                         <SmartImage src={item.image} alt={l(item.title)} />
                       </div>
-                      <div style={{ padding: '0.95rem 1.15rem', fontWeight: 800, fontSize: '0.9rem' }}>
-                        {l(item.title)}
+                      <div style={{ padding: '0.95rem 1.15rem' }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <strong style={{ fontWeight: 800, fontSize: '0.92rem' }}>
+                            {l(item.title)}
+                          </strong>
+                          {item.year && (
+                            <span style={{ fontSize: '0.74rem', color: '#666860', fontWeight: 700 }}>
+                              {item.year}
+                            </span>
+                          )}
+                        </Stack>
+                        {item.summary && (
+                          <p style={{ fontSize: '0.82rem', color: '#666860', marginTop: 4 }}>
+                            {l(item.summary)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </Grid>
@@ -552,11 +630,46 @@ export default function ProfessionalProfilePage() {
                           </div>
                         </div>
                       </Stack>
-                      <span style={{ fontWeight: 800, color: '#E59934' }}>★ {rev.rating}.0</span>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <span style={{ fontWeight: 800, color: '#E59934' }}>★ {rev.rating}.0</span>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              deleteReview(rev.id);
+                              showToast({
+                                title:
+                                  lang === 'fa'
+                                    ? 'دیدگاه توسط ادمین حذف شد'
+                                    : 'Review Removed by Admin',
+                                type: 'info',
+                              });
+                            }}
+                            className="owj-btn owj-btn--danger owj-btn--sm"
+                            aria-label="Remove review"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </Stack>
                     </Stack>
                     <p style={{ marginTop: '0.6rem', fontSize: '0.88rem', lineHeight: 1.75 }}>
                       {l(rev.comment)}
                     </p>
+                    {rev.reply && (
+                      <div
+                        style={{
+                          marginTop: '0.6rem',
+                          padding: '0.65rem 0.9rem',
+                          borderRadius: '10px',
+                          background: '#F6F5F0',
+                          fontSize: '0.83rem',
+                        }}
+                      >
+                        <strong>{lang === 'fa' ? 'پاسخ متخصص: ' : 'Specialist reply: '}</strong>
+                        {l(rev.reply)}
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -565,7 +678,7 @@ export default function ProfessionalProfilePage() {
         </Box>
       </Container>
 
-      {hasToken && (
+      {isMarketplaceMember && (
         <ContactModal
           isOpen={contactOpen}
           onClose={() => setContactOpen(false)}

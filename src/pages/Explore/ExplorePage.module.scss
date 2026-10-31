@@ -17,7 +17,8 @@
 
 .searchInputWrap {
   flex: 1;
-  min-width: 260px;
+  min-width: 0;
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 0.65rem;
@@ -28,6 +29,7 @@
 
   input {
     width: 100%;
+    min-width: 0;
     border: none;
     background: transparent;
     outline: none;

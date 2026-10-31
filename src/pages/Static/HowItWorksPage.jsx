@@ -9,8 +9,7 @@ import styles from './StaticPages.module.scss';
 
 export default function HowItWorksPage() {
   const { lang } = useLanguage();
-  const { hasToken, isProfessional } = useAuth();
-  const { openSkillRequestModal } = useMarketplace();
+  const { hasToken, isProfessional, isCustomer, isAdmin, isOperator } = useAuth();
 
   const clientSteps = [
     {
@@ -120,26 +119,28 @@ export default function HowItWorksPage() {
                 </Link>
                 {hasToken ? (
                   isProfessional ? (
-                    <>
-                      <Link to="/create-ad" className="owj-btn owj-btn--lime owj-btn--sm">
-                        {lang === 'fa' ? 'ثبت آگهی خدمت' : 'Publish a Service'}
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => openSkillRequestModal()}
-                        className="owj-btn owj-btn--outline owj-btn--sm"
-                      >
-                        {lang === 'fa' ? 'ارسال درخواست مهارت' : 'Request a Skill'}
-                      </button>
-                    </>
-                  ) : (
-                    <Link to="/messages" className="owj-btn owj-btn--lime owj-btn--sm">
-                      {lang === 'fa' ? 'پیام‌های ارسالی من' : 'My Sent Messages'}
+                    <Link to="/create-ad" className="owj-btn owj-btn--lime owj-btn--sm">
+                      {lang === 'fa' ? 'ثبت آگهی خدمت' : 'Publish a Service'}
                     </Link>
-                  )
+                  ) : isCustomer ? (
+                    <Link to="/messages" className="owj-btn owj-btn--lime owj-btn--sm">
+                      {lang === 'fa' ? 'پیام‌های من' : 'My Messages'}
+                    </Link>
+                  ) : isAdmin ? (
+                    <Link to="/admin" className="owj-btn owj-btn--lime owj-btn--sm">
+                      {lang === 'fa' ? 'پنل مدیریت و CRM' : 'Admin & CRM'}
+                    </Link>
+                  ) : isOperator ? (
+                    <Link to="/operator" className="owj-btn owj-btn--lime owj-btn--sm">
+                      {lang === 'fa' ? 'میز پشتیبانی' : 'Operator Console'}
+                    </Link>
+                  ) : null
                 ) : (
-                  <Link to="/auth/login" className="owj-btn owj-btn--lime owj-btn--sm">
-                    {lang === 'fa' ? 'ورود / عضویت متخصصان' : 'Sign In as Specialist'}
+                  <Link
+                    to="/auth/signup?role=professional"
+                    className="owj-btn owj-btn--lime owj-btn--sm"
+                  >
+                    {lang === 'fa' ? 'ورود / عضویت متخصصان' : 'Join as Specialist'}
                   </Link>
                 )}
               </Stack>

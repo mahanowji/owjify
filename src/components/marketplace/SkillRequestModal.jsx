@@ -11,8 +11,9 @@ import { useToast } from '../../context/ToastContext';
 
 export default function SkillRequestModal() {
   const { lang, l } = useLanguage();
-  const { user, hasToken, isProfessional } = useAuth();
+  const { user, hasToken, isProfessional, isMarketplaceMember } = useAuth();
   const {
+    activeCategories,
     professionals,
     skillModalState,
     closeSkillRequestModal,
@@ -53,10 +54,12 @@ export default function SkillRequestModal() {
     }
   }, [open, presetPro, otherProfessionals, l]);
 
-  if (!hasToken || !isProfessional) return null;
+  if (!hasToken || !isMarketplaceMember) return null;
 
   const activeCategory =
-    CATEGORIES.find((c) => c.id === categoryId) || CATEGORIES[0];
+    activeCategories.find((c) => c.id === categoryId) ||
+    activeCategories[0] ||
+    CATEGORIES[0];
 
   const suggestedSkills = (activeCategory?.subcategories || []).map((sub) =>
     l(sub.name)
@@ -123,9 +126,13 @@ export default function SkillRequestModal() {
       isOpen={open}
       onClose={closeSkillRequestModal}
       title={
-        lang === 'fa'
-          ? 'ارسال درخواست مهارت (ویژه متخصصان)'
-          : 'Send a Skill Request (Provider Tool)'
+        isProfessional
+          ? lang === 'fa'
+            ? 'ارسال درخواست مهارت و همکاری تخصصی'
+            : 'Send a Skill Request (Provider Tool)'
+          : lang === 'fa'
+          ? 'ثبت درخواست مهارت سفارشی'
+          : 'Request a Custom Skill'
       }
       wide
     >
@@ -215,7 +222,7 @@ export default function SkillRequestModal() {
               onChange={(e) => setCategoryId(e.target.value)}
               style={inputStyle}
             >
-              {CATEGORIES.map((cat) => (
+              {activeCategories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {l(cat.name)}
                 </option>
@@ -233,7 +240,7 @@ export default function SkillRequestModal() {
                   marginBottom: 6,
                 }}
               >
-                {lang === 'fa' ? 'ارسال به متخصص همکار' : 'Target Specialist'}
+                {lang === 'fa' ? 'ارسال به متخصص منتخب' : 'Target Specialist'}
               </label>
               <select
                 value={targetProId}
@@ -247,7 +254,7 @@ export default function SkillRequestModal() {
                 ))}
               </select>
             </Grid>
-          ) : (
+          ) : isProfessional ? (
             <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex', alignItems: 'flex-end' }}>
               <label
                 style={{
@@ -276,7 +283,7 @@ export default function SkillRequestModal() {
                 </span>
               </label>
             </Grid>
-          )}
+          ) : null}
 
           <Grid size={{ xs: 12 }}>
             <label

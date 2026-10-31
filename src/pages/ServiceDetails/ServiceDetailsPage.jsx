@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Container, Grid, Stack, Tooltip } from '@mui/material';
+import { Container, Grid, Stack, Tooltip, Chip } from '@mui/material';
 import {
   Star,
   MapPin,
@@ -15,6 +15,11 @@ import {
   Edit3,
   LogIn,
   Sparkles,
+  ShieldCheck,
+  Headset,
+  PauseCircle,
+  PlayCircle,
+  Trash2,
 } from 'lucide-react';
 import PageTransition from '../../components/common/PageTransition';
 import SmartImage from '../../components/common/SmartImage';
@@ -41,15 +46,26 @@ export default function ServiceDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { lang, l, ui } = useLanguage();
-  const { user, hasToken, isProfessional } = useAuth();
   const {
+    user,
+    hasToken,
+    isCustomer,
+    isProfessional,
+    isOperator,
+    isAdmin,
+    isMarketplaceMember,
+  } = useAuth();
+  const {
+    categories,
     advertisements,
     professionals,
     reviews,
     favoriteAds,
     toggleFavoriteAd,
+    updateAdvertisement,
     addReview,
-    openSkillRequestModal,
+    replyToReview,
+    deleteReview,
   } = useMarketplace();
   const { showToast } = useToast();
 
@@ -63,6 +79,7 @@ export default function ServiceDetailsPage() {
 
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
+  const [ownerReplyDrafts, setOwnerReplyDrafts] = useState({});
 
   const pro = useMemo(() => {
     if (!ad) return null;
@@ -99,9 +116,10 @@ export default function ServiceDetailsPage() {
     );
   }
 
-  const category = getCategoryById(ad.categoryId);
+  const category =
+    categories.find((c) => c.id === ad.categoryId) || getCategoryById(ad.categoryId);
   const location = getLocationById(ad.locationId);
-  const isFav = hasToken && favoriteAds.includes(ad.id);
+  const isFav = isMarketplaceMember && favoriteAds.includes(ad.id);
   const images = ad.images?.length ? ad.images : [category.cover];
   const currentImg = images[activeImgIdx] || images[0];
   const isOwner =
@@ -111,7 +129,7 @@ export default function ServiceDetailsPage() {
     (user.id === ad.ownerUserId || user.proId === ad.proId);
 
   const handleFavorite = () => {
-    if (!hasToken) return;
+    if (!isMarketplaceMember) return;
     const added = toggleFavoriteAd(ad.id);
     showToast({
       title: added
@@ -127,19 +145,28 @@ export default function ServiceDetailsPage() {
 
   const handleReviewSubmit = (e) => {
     e.preventDefault();
-    if (!hasToken || !reviewText.trim()) return;
+    if (!isCustomer || !reviewText.trim()) return;
 
     addReview({
       adId: ad.id,
       proId: pro?.id,
       rating: reviewRating,
       comment: reviewText.trim(),
-      authorName: user.fullName.split('|')[0].trim(),
-      authorAvatar: user.avatar,
     });
     setReviewText('');
     showToast({
       title: lang === 'fa' ? 'دیدگاه شما ثبت شد' : 'Review Published',
+      type: 'success',
+    });
+  };
+
+  const handleOwnerReply = (reviewId) => {
+    const draft = (ownerReplyDrafts[reviewId] || '').trim();
+    if (!draft) return;
+    replyToReview(reviewId, draft);
+    setOwnerReplyDrafts((prev) => ({ ...prev, [reviewId]: '' }));
+    showToast({
+      title: lang === 'fa' ? 'پاسخ رسمی ثبت شد' : 'Specialist Reply Published',
       type: 'success',
     });
   };
@@ -156,7 +183,26 @@ export default function ServiceDetailsPage() {
           <Link to={`/explore?category=${category.id}`}>{l(category.name)}</Link>
         </nav>
 
-        {/* Title & Actions */}
+        {/* Paused notice for Owner / Admin */}
+        {ad.status === 'paused' && (
+          <div
+            style={{
+              padding: '0.75rem 1.1rem',
+              borderRadius: '14px',
+              background: 'rgba(229,153,52,0.16)',
+              color: '#7a4b0b',
+              fontWeight: 700,
+              fontSize: '0.84rem',
+              marginBottom: '1rem',
+            }}
+          >
+            {lang === 'fa'
+              ? 'این آگهی هم‌اکنون در وضعیت متوقف موقت قرار دارد و در نتایج عمومی کاوش نمایش داده نمی‌شود.'
+              : 'This listing is currently paused and hidden from public marketplace search.'}
+          </div>
+        )}
+
+        {/* Title & Separated Icon-Only Actions */}
         <Stack
           direction={{ xs: 'column', md: 'row' }}
           justifyContent="space-between"
@@ -184,7 +230,7 @@ export default function ServiceDetailsPage() {
               >
                 <Star size={15} fill="#E59934" color="#E59934" />
                 {lang === 'fa' ? toPersianDigits(ad.rating) : ad.rating} (
-                {formatNumber(ad.reviewCount, lang)} {ui.common.reviews})
+                {formatNumber(adReviews.length || ad.reviewCount, lang)} {ui.common.reviews})
               </span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 <MapPin size={15} />
@@ -197,20 +243,21 @@ export default function ServiceDetailsPage() {
             </Stack>
           </div>
 
+          {/* Separated 38x38 icon-only buttons — strictly role-aware */}
           <div className={styles.actionCluster}>
             {isOwner && (
               <Tooltip title={lang === 'fa' ? 'ویرایش آگهی' : 'Edit Listing'} arrow>
                 <Link
                   to={`/edit-ad/${ad.id}`}
                   className={`${styles.iconOnlyBtn} ${styles.iconOnlyActive}`}
-                  aria-label={lang === 'fa' ? 'ویرایش آگهی' : 'Edit Listing'}
+                  aria-label={lang === 'fa' ? 'Edit Listing' : 'Edit Listing'}
                 >
                   <Edit3 size={16} />
                 </Link>
               </Tooltip>
             )}
 
-            {hasToken && (
+            {isMarketplaceMember && !isOwner && (
               <Tooltip title={isFav ? ui.common.saved : ui.common.save} arrow>
                 <button
                   type="button"
@@ -234,16 +281,19 @@ export default function ServiceDetailsPage() {
               </button>
             </Tooltip>
 
-            <Tooltip title={ui.common.report} arrow>
-              <button
-                type="button"
-                onClick={() => setReportOpen(true)}
-                className={`${styles.iconOnlyBtn} ${styles.iconOnlyReport}`}
-                aria-label={ui.common.report}
-              >
-                <Flag size={16} />
-              </button>
-            </Tooltip>
+            {/* Report only for Guest, Customer, or non-owner Professional */}
+            {!isOwner && !isAdmin && !isOperator && (
+              <Tooltip title={ui.common.report} arrow>
+                <button
+                  type="button"
+                  onClick={() => setReportOpen(true)}
+                  className={`${styles.iconOnlyBtn} ${styles.iconOnlyReport}`}
+                  aria-label={ui.common.report}
+                >
+                  <Flag size={16} />
+                </button>
+              </Tooltip>
+            )}
           </div>
         </Stack>
 
@@ -356,21 +406,50 @@ export default function ServiceDetailsPage() {
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Stack direction="row" spacing={1.2} alignItems="center">
                       <div style={{ width: 38, height: 38, borderRadius: '50%', overflow: 'hidden' }}>
-                        <SmartImage src={rev.avatar} alt={l(rev.author)} />
+                        <SmartImage
+                          src={rev.avatar || rev.authorAvatar}
+                          alt={l(rev.author || rev.authorName)}
+                        />
                       </div>
                       <div>
-                        <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>{l(rev.author)}</div>
+                        <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>
+                          {l(rev.author || rev.authorName)}
+                        </div>
                         <div style={{ fontSize: '0.75rem', color: '#92948c' }}>
                           {formatRelativeTime(rev.createdAt, lang)}
                         </div>
                       </div>
                     </Stack>
-                    <span style={{ fontWeight: 800, color: '#E59934' }}>★ {rev.rating}.0</span>
+
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <span style={{ fontWeight: 800, color: '#E59934' }}>★ {rev.rating}.0</span>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            deleteReview(rev.id);
+                            showToast({
+                              title:
+                                lang === 'fa'
+                                  ? 'دیدگاه توسط ادمین حذف شد'
+                                  : 'Review Removed by Admin',
+                              type: 'info',
+                            });
+                          }}
+                          className="owj-btn owj-btn--danger owj-btn--sm"
+                          title={lang === 'fa' ? 'حذف دیدگاه' : 'Remove Review'}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </Stack>
                   </Stack>
+
                   <p style={{ marginTop: '0.65rem', fontSize: '0.9rem', lineHeight: 1.75 }}>
                     {l(rev.comment)}
                   </p>
-                  {rev.reply && (
+
+                  {rev.reply ? (
                     <div
                       style={{
                         marginTop: '0.65rem',
@@ -383,12 +462,46 @@ export default function ServiceDetailsPage() {
                       <strong>{lang === 'fa' ? 'پاسخ متخصص: ' : 'Specialist reply: '}</strong>
                       {l(rev.reply)}
                     </div>
+                  ) : (
+                    isOwner && (
+                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.7rem' }}>
+                        <input
+                          type="text"
+                          value={ownerReplyDrafts[rev.id] || ''}
+                          onChange={(e) =>
+                            setOwnerReplyDrafts((prev) => ({
+                              ...prev,
+                              [rev.id]: e.target.value,
+                            }))
+                          }
+                          placeholder={
+                            lang === 'fa'
+                              ? 'ثبت پاسخ رسمی متخصص به این دیدگاه...'
+                              : 'Write your official specialist reply...'
+                          }
+                          style={{
+                            flex: 1,
+                            padding: '0.52rem 0.85rem',
+                            borderRadius: '10px',
+                            border: '1px solid rgba(17,18,15,0.14)',
+                            fontSize: '0.84rem',
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleOwnerReply(rev.id)}
+                          className="owj-btn owj-btn--dark owj-btn--sm"
+                        >
+                          {lang === 'fa' ? 'ارسال پاسخ' : 'Reply'}
+                        </button>
+                      </div>
+                    )
                   )}
                 </div>
               ))}
 
-              {/* Review submission ONLY when valid user token exists */}
-              {hasToken ? (
+              {/* Review submission strictly for Customers (Guests see login prompt; Owners reply above) */}
+              {isCustomer ? (
                 <form
                   onSubmit={handleReviewSubmit}
                   style={{
@@ -398,7 +511,7 @@ export default function ServiceDetailsPage() {
                   }}
                 >
                   <h3 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '0.75rem' }}>
-                    {lang === 'fa' ? 'ثبت امتیاز و تجربه شما' : 'Write a Review'}
+                    {lang === 'fa' ? 'ثبت امتیاز و تجربه شما' : 'Write a Client Review'}
                   </h3>
                   <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '0.75rem' }}>
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -435,11 +548,15 @@ export default function ServiceDetailsPage() {
                       marginBottom: '0.8rem',
                     }}
                   />
-                  <button type="submit" className="owj-btn owj-btn--dark owj-btn--sm">
+                  <button
+                    type="submit"
+                    disabled={!reviewText.trim()}
+                    className="owj-btn owj-btn--dark owj-btn--sm"
+                  >
                     {lang === 'fa' ? 'ارسال دیدگاه' : 'Submit Review'}
                   </button>
                 </form>
-              ) : (
+              ) : !hasToken ? (
                 <div
                   style={{
                     marginTop: '1.25rem',
@@ -455,8 +572,8 @@ export default function ServiceDetailsPage() {
                 >
                   <span style={{ fontSize: '0.88rem', color: '#464841', fontWeight: 600 }}>
                     {lang === 'fa'
-                      ? 'برای ثبت امتیاز و دیدگاه، وارد حساب کاربری خود شوید.'
-                      : 'Sign in to leave a rating and review for this service.'}
+                      ? 'برای ثبت امتیاز و دیدگاه کارفرما، وارد حساب کاربری خود شوید.'
+                      : 'Sign in with a Customer account to rate and review this service.'}
                   </span>
                   <button
                     type="button"
@@ -469,17 +586,47 @@ export default function ServiceDetailsPage() {
                     <span>{ui.nav.login}</span>
                   </button>
                 </div>
-              )}
+              ) : isOwner ? (
+                <div
+                  style={{
+                    marginTop: '1.15rem',
+                    padding: '0.85rem 1rem',
+                    borderRadius: '12px',
+                    background: '#F6F5F0',
+                    fontSize: '0.84rem',
+                    color: '#464841',
+                  }}
+                >
+                  {lang === 'fa'
+                    ? 'شما صاحب این آگهی هستید و می‌توانید به دیدگاه‌های کارفرمایان در بالا پاسخ رسمی ثبت کنید.'
+                    : 'You own this listing and can publish official replies to client reviews above.'}
+                </div>
+              ) : null}
             </div>
           </Grid>
 
-          {/* Sticky Pricing & Specialist Sidebar */}
+          {/* Sticky Pricing & Role-Specific Sidebar */}
           <Grid size={{ xs: 12, lg: 4.3 }}>
             <aside className={styles.stickySidebar}>
               <div className={styles.pricingCard}>
-                <span style={{ fontSize: '0.8rem', color: 'rgba(246,245,240,0.68)' }}>
-                  {l(ad.pricingType)}
-                </span>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <span style={{ fontSize: '0.8rem', color: 'rgba(246,245,240,0.68)' }}>
+                    {l(ad.pricingType)}
+                  </span>
+                  {ad.featured && (
+                    <Chip
+                      size="small"
+                      label={lang === 'fa' ? 'منتخب اوجیفای' : 'Featured'}
+                      sx={{
+                        height: 20,
+                        bgcolor: 'rgba(199,243,107,0.22)',
+                        color: '#C7F36B',
+                        fontWeight: 800,
+                        fontSize: '0.68rem',
+                      }}
+                    />
+                  )}
+                </Stack>
                 <div className={styles.priceBig}>{formatPrice(ad, lang)}</div>
                 <p
                   style={{
@@ -494,55 +641,108 @@ export default function ServiceDetailsPage() {
                     : 'Exact quote finalized based on your project scope.'}
                 </p>
 
-                {/* Role-aware actions behind valid user token */}
-                {hasToken ? (
-                  isOwner ? (
+                {/* Strictly Role-Differentiated Primary Sidebar Actions */}
+                {isAdmin ? (
+                  <Stack spacing={1} sx={{ mt: 2 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextStatus = ad.status === 'paused' ? 'active' : 'paused';
+                        updateAdvertisement(ad.id, { status: nextStatus });
+                        showToast({
+                          title:
+                            nextStatus === 'paused'
+                              ? lang === 'fa'
+                                ? 'آگهی توسط ادمین متوقف شد'
+                                : 'Listing Paused by Admin'
+                              : lang === 'fa'
+                              ? 'آگهی مجدداً فعال شد'
+                              : 'Listing Activated by Admin',
+                          type: 'info',
+                        });
+                      }}
+                      className="owj-btn owj-btn--lime"
+                      style={{ width: '100%' }}
+                    >
+                      {ad.status === 'paused' ? (
+                        <PlayCircle size={17} />
+                      ) : (
+                        <PauseCircle size={17} />
+                      )}
+                      <span>
+                        {ad.status === 'paused'
+                          ? lang === 'fa'
+                            ? 'فعال‌سازی آگهی (مدیریت)'
+                            : 'Activate Listing (Admin)'
+                          : lang === 'fa'
+                          ? 'توقف موقت آگهی (مدیریت)'
+                          : 'Pause Listing (Admin)'}
+                      </span>
+                    </button>
+                    <Link
+                      to="/admin"
+                      className="owj-btn owj-btn--outline-light"
+                      style={{ width: '100%' }}
+                    >
+                      <ShieldCheck size={16} color="#C7F36B" />
+                      <span>
+                        {lang === 'fa' ? 'بازگشت به پنل ادمین' : 'Moderation Console'}
+                      </span>
+                    </Link>
+                  </Stack>
+                ) : isOperator ? (
+                  <Stack spacing={1} sx={{ mt: 2 }}>
+                    <Link
+                      to="/operator"
+                      className="owj-btn owj-btn--lime"
+                      style={{ width: '100%' }}
+                    >
+                      <Headset size={17} />
+                      <span>
+                        {lang === 'fa'
+                          ? 'بررسی گزارش‌های مرتبط در میز اپراتور'
+                          : 'Review in Operator Desk'}
+                      </span>
+                    </Link>
+                  </Stack>
+                ) : isOwner ? (
+                  <Stack spacing={1} sx={{ mt: 2 }}>
                     <Link
                       to={`/edit-ad/${ad.id}`}
                       className="owj-btn owj-btn--lime"
-                      style={{ width: '100%', marginTop: '1.35rem' }}
+                      style={{ width: '100%' }}
                     >
                       <Edit3 size={17} />
                       <span>
                         {lang === 'fa' ? 'ویرایش این آگهی من' : 'Edit Your Listing'}
                       </span>
                     </Link>
-                  ) : (
-                    <Stack spacing={1.1} sx={{ mt: 2 }}>
-                      <button
-                        type="button"
-                        onClick={() => setContactOpen(true)}
-                        className="owj-btn owj-btn--lime"
-                        style={{ width: '100%' }}
-                      >
-                        <MessageSquare size={17} />
-                        <span>
-                          {isProfessional
-                            ? lang === 'fa'
-                              ? 'ارسال پیام به همکار متخصص'
-                              : 'Message Specialist'
-                            : ui.common.contactPro}
-                        </span>
-                      </button>
-
-                      {/* Provider-only: Request a Skill from this Specialist */}
-                      {isProfessional && pro && (
-                        <button
-                          type="button"
-                          onClick={() => openSkillRequestModal(pro)}
-                          className="owj-btn owj-btn--outline-light"
-                          style={{ width: '100%' }}
-                        >
-                          <Sparkles size={16} color="#C7F36B" />
-                          <span>
-                            {lang === 'fa'
-                              ? 'ارسال درخواست مهارت به این متخصص'
-                              : 'Send Skill Request to Specialist'}
-                          </span>
-                        </button>
-                      )}
-                    </Stack>
-                  )
+                    <Link
+                      to="/dashboard?tab=ads"
+                      className="owj-btn owj-btn--outline-light"
+                      style={{ width: '100%' }}
+                    >
+                      <span>
+                        {lang === 'fa' ? 'مدیریت همه آگهی‌های من' : 'Manage My Listings'}
+                      </span>
+                    </Link>
+                  </Stack>
+                ) : hasToken ? (
+                  <button
+                    type="button"
+                    onClick={() => setContactOpen(true)}
+                    className="owj-btn owj-btn--lime"
+                    style={{ width: '100%', marginTop: '1.35rem' }}
+                  >
+                    <MessageSquare size={17} />
+                    <span>
+                      {isProfessional
+                        ? lang === 'fa'
+                          ? 'ارتباط و ارسال پیام به متخصص'
+                          : 'Connect with Specialist'
+                        : ui.common.contactPro}
+                    </span>
+                  </button>
                 ) : (
                   <button
                     type="button"
@@ -655,7 +855,7 @@ export default function ServiceDetailsPage() {
         </div>
       </Modal>
 
-      {hasToken && (
+      {isMarketplaceMember && (
         <ContactModal
           isOpen={contactOpen}
           onClose={() => setContactOpen(false)}

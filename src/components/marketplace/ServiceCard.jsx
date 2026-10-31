@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Heart, Star, MapPin, BadgeCheck, ArrowUpLeft, ArrowUpRight } from 'lucide-react';
 import SmartImage from '../common/SmartImage';
 import { getCategoryById } from '../../data/categories';
@@ -7,24 +8,27 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useToast } from '../../context/ToastContext';
+import { useMotionSafe } from '../../hooks/useMotionSafe';
 import { formatPrice, formatNumber, toPersianDigits } from '../../utils/formatters';
 import styles from './ServiceCard.module.scss';
 
 export default function ServiceCard({ ad, viewMode = 'grid' }) {
   const { lang, isRTL, l, ui } = useLanguage();
-  const { hasToken } = useAuth();
-  const { professionals, favoriteAds, toggleFavoriteAd } = useMarketplace();
+  const { isMarketplaceMember } = useAuth();
+  const { categories, professionals, favoriteAds, toggleFavoriteAd } = useMarketplace();
   const { showToast } = useToast();
+  const { prefersReduced } = useMotionSafe();
 
   const pro = professionals.find((p) => p.id === ad.proId) || professionals[0];
-  const category = getCategoryById(ad.categoryId);
+  const category =
+    categories.find((c) => c.id === ad.categoryId) || getCategoryById(ad.categoryId);
   const location = getLocationById(ad.locationId);
-  const isFav = hasToken && favoriteAds.includes(ad.id);
+  const isFav = isMarketplaceMember && favoriteAds.includes(ad.id);
 
   const handleToggleFav = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!hasToken) return;
+    if (!isMarketplaceMember) return;
     const added = toggleFavoriteAd(ad.id);
     showToast({
       title: added
@@ -44,7 +48,11 @@ export default function ServiceCard({ ad, viewMode = 'grid' }) {
   const ratingText = lang === 'fa' ? toPersianDigits(ad.rating) : ad.rating;
 
   return (
-    <article className={`${styles.card} ${viewMode === 'list' ? styles.listMode : ''}`}>
+    <motion.article
+      className={`${styles.card} ${viewMode === 'list' ? styles.listMode : ''}`}
+      whileHover={prefersReduced ? undefined : { y: -5 }}
+      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div className={styles.coverWrap}>
         <Link to={`/services/${ad.id}`} className={styles.coverMedia}>
           <SmartImage src={ad.images?.[0]} alt={l(ad.title)} />
@@ -59,16 +67,17 @@ export default function ServiceCard({ ad, viewMode = 'grid' }) {
           )}
         </div>
 
-        {/* Likes/Favorites ONLY visible when a valid user token exists */}
-        {hasToken && (
-          <button
+        {/* Favorites strictly for Customer & Professional roles */}
+        {isMarketplaceMember && (
+          <motion.button
             type="button"
+            whileTap={prefersReduced ? undefined : { scale: 0.88 }}
             className={`${styles.favBtn} ${isFav ? styles.favActive : ''}`}
             onClick={handleToggleFav}
             aria-label={isFav ? ui.common.saved : ui.common.save}
           >
             <Heart size={14} fill={isFav ? 'currentColor' : 'none'} />
-          </button>
+          </motion.button>
         )}
       </div>
 
@@ -119,6 +128,6 @@ export default function ServiceCard({ ad, viewMode = 'grid' }) {
           </Link>
         </div>
       </div>
-    </article>
+    </motion.article>
   );
 }

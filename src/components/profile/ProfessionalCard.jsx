@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { BadgeCheck, Star, MapPin, Heart } from 'lucide-react';
 import SmartImage from '../common/SmartImage';
 import { getLocationById } from '../../data/locations';
@@ -6,20 +7,22 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useToast } from '../../context/ToastContext';
+import { useMotionSafe } from '../../hooks/useMotionSafe';
 import { formatNumber, toPersianDigits } from '../../utils/formatters';
 import styles from './ProfessionalCard.module.scss';
 
 export default function ProfessionalCard({ pro }) {
   const { lang, l, ui } = useLanguage();
-  const { hasToken } = useAuth();
+  const { isMarketplaceMember } = useAuth();
   const { favoritePros, toggleFavoritePro } = useMarketplace();
   const { showToast } = useToast();
+  const { prefersReduced } = useMotionSafe();
 
-  const isFav = hasToken && favoritePros.includes(pro.id);
+  const isFav = isMarketplaceMember && favoritePros.includes(pro.id);
   const location = getLocationById(pro.locationId);
 
   const handleFav = () => {
-    if (!hasToken) return;
+    if (!isMarketplaceMember) return;
     const added = toggleFavoritePro(pro.id);
     showToast({
       title: added
@@ -36,7 +39,11 @@ export default function ProfessionalCard({ pro }) {
   };
 
   return (
-    <article className={styles.card}>
+    <motion.article
+      className={styles.card}
+      whileHover={prefersReduced ? undefined : { y: -5 }}
+      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div className={styles.top}>
         <Link to={`/professionals/${pro.id}`} className={styles.identity}>
           <div className={styles.avatarWrap}>
@@ -52,16 +59,17 @@ export default function ProfessionalCard({ pro }) {
           </div>
         </Link>
 
-        {/* Specialist Like/Save button ONLY visible when a valid user token exists */}
-        {hasToken && (
-          <button
+        {/* Specialist Save button strictly for Customer & Professional roles */}
+        {isMarketplaceMember && (
+          <motion.button
             type="button"
+            whileTap={prefersReduced ? undefined : { scale: 0.88 }}
             onClick={handleFav}
             className={`${styles.favBtn} ${isFav ? styles.active : ''}`}
-            aria-label="Save specialist"
+            aria-label={isFav ? ui.common.saved : ui.common.save}
           >
             <Heart size={14} fill={isFav ? 'currentColor' : 'none'} />
-          </button>
+          </motion.button>
         )}
       </div>
 
@@ -100,6 +108,6 @@ export default function ProfessionalCard({ pro }) {
           {ui.common.viewProfile}
         </Link>
       </div>
-    </article>
+    </motion.article>
   );
 }

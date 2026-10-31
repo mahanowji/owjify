@@ -9,7 +9,8 @@ export default function ShareModal({ isOpen, onClose, title, shareUrl }) {
   const { showToast } = useToast();
   const [copied, setCopied] = useState(false);
 
-  const url = shareUrl || window.location.href;
+  const url =
+    shareUrl || (typeof window !== 'undefined' ? window.location.href : 'https://owjify.ir');
 
   const handleCopy = async () => {
     try {
